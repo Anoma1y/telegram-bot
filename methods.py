@@ -1,7 +1,7 @@
 import config as CONFIG
 import requests
 
-url = 'https://api.telegram.org/bot' + CONFIG.token + '/'
+url = 'https://api.telegram.org/bot' + CONFIG.TOKEN + '/'
 
 
 # getMe - get bots info
@@ -11,17 +11,25 @@ def get_me_json():
 
 
 # getUpdates - get last updates
-def get_update_json():
-    response = requests.get(url + 'getUpdates')
+def get_update_json(offset=100000, timeout=CONFIG.CONNECTION_LOST_TIMEOUT):
+    params = {
+        'offset': offset,
+        'timeout': timeout
+    }
+    response = requests.get(url + 'getUpdates', data=params)
     return response.json()
 
 
 # sendMessage - send message by user
-def send_message(chat_id, text):
+def send_message(chat_id, text, disable_web_page_preview=None):
     params = {
         'chat_id': chat_id,
         'text': text
     }
+    if disable_web_page_preview is not None:
+        params.update({
+            'disable_web_page_preview': True
+        })
     return requests.post(url + 'sendMessage', data=params)
 
 
