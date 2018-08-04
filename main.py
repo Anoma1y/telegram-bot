@@ -38,11 +38,12 @@ def invalid_cmd(chat_id, command):
 
 
 # get command list
-def get_command(chat_id):
-    file = open("telegram_help.txt", 'r')
+def get_help_command_list(chat_id):
+    file = open("telegram_help.txt", 'r', encoding='utf-8')
+    help_doc = ''
     if file.mode == 'r':
-        helpDoc = file.read()
-    methods.send_message(chat_id, helpDoc)
+        help_doc = file.read().encode('UTF-8')
+    methods.send_message(chat_id, help_doc)
 
 
 # handler command
@@ -56,9 +57,15 @@ def handle_cmd(command):
     elif command == '/image':
         methods.send_photo(chat_id, 'http://image.noelshack.com/fichiers/2015/33/1439306897-169413-jpg.jpeg')
     elif command == '/help':
-        get_command(chat_id)
+        get_help_command_list(chat_id)
     else:
         invalid_cmd(chat_id, command)
+
+
+# invalid_cmd(get_last_chat_id(), '/fuck')
+# get_help_command_list(get_last_chat_id())
+
+
 
 
 # def main():
