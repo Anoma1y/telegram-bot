@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+from flask import Flask
 import methods
 from time import sleep
 # import postgresql
@@ -8,6 +8,14 @@ from time import sleep
 
 # db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 import yandere
+
+
+app = Flask(__name__)
+app.debug = True
+
+@app.route("/")
+def hello_world():
+    return "Hello World"
 
 
 def error():
@@ -102,8 +110,8 @@ def main():
         sleep(3)
 
 
-if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        exit()
+#if __name__ == '__main__':
+#    try:
+#        main()
+#    except KeyboardInterrupt:
+#        exit()
