@@ -20,17 +20,16 @@ bot = telegram.Bot(token=CONFIG.TOKEN)
 
 URL = '207.154.250.14'
 
-#WebHook
+
 @app.route('/HOOK', methods=['POST', 'GET'])
 def webhook_handler():
     if request.method == "POST":
         update = telegram.Update.de_json(request.get_json(force=True), bot)
-        #  todo: try catch
-        chat_id = update.message.chat.id
-        text = update.message.text
-        userid = update.message.from_user.id
-        username = update.message.from_user.username
-        bot.send_message(chat_id=chat_id, text="hello")
+        try:
+            chat_id = update.message.chat.id
+            bot.send_message(chat_id=chat_id, text="hello")
+        except Exception as e:
+            print("type error: " + str(e))
     return 'ok'
 
 
@@ -42,7 +41,6 @@ def set_webhook():
         return "webhook setup ok"
     else:
         return "webhook setup failed"
-
 
 
 @app.route("/")
