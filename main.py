@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from flask import Flask
+from flask import Flask, request
+import telegram
 import methods
 from time import sleep
 # import postgresql
-# import config as CONFIG
+import config as CONFIG
 
 # db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 import yandere
@@ -12,6 +13,37 @@ import yandere
 
 app = Flask(__name__)
 app.debug = True
+
+
+global bot
+bot = telegram.Bot(token=CONFIG.TOKEN)
+
+URL = '207.154.250.14'
+
+#WebHook
+@app.route('/HOOK', methods=['POST', 'GET'])
+def webhook_handler():
+    if request.method == "POST":
+        update = telegram.Update.de_json(request.get_json(force=True), bot)
+        #  todo: try catch
+        chat_id = update.message.chat.id
+        text = update.message.text
+        userid = update.message.from_user.id
+        username = update.message.from_user.username
+        bot.send_message(chat_id=chat_id, text="hello")
+    return 'ok'
+
+
+@app.route('/set_webhook', methods=['GET', 'POST'])
+def set_webhook():
+    s = bot.setWebhook('https://%s:443/HOOK' % URL, certificate=open('/etc/ssl/server.crt', 'rb'))
+    if s:
+        print(s)
+        return "webhook setup ok"
+    else:
+        return "webhook setup failed"
+
+
 
 @app.route("/")
 def hello_world():
