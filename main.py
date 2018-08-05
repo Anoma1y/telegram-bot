@@ -1,8 +1,13 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 import methods
 from time import sleep
 # import postgresql
 # import config as CONFIG
+
 # db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
+import yandere
 
 
 def error():
@@ -54,6 +59,7 @@ def handle_cmd(command):
         methods.send_message(chat_id, 'Hello World')
     elif command == '/close':
         methods.send_message(chat_id, 'Closing the Telegram Bot')
+        exit()
     elif command == '/image':
         methods.send_photo(chat_id, 'http://image.noelshack.com/fichiers/2015/33/1439306897-169413-jpg.jpeg')
     elif command == '/help':
@@ -62,30 +68,42 @@ def handle_cmd(command):
         invalid_cmd(chat_id, command)
 
 
-# invalid_cmd(get_last_chat_id(), '/fuck')
-# get_help_command_list(get_last_chat_id())
+unix_time = {
+    'minute': 60,
+    'hour': 3600,
+    'day': 86400,
+    'week': 604800,
+    'month': 2629743,
+    'year': 31556926
+}
 
 
+def send_album():
+    json_data = yandere.get_images(page_limit=3, tags='stockings', period_time=unix_time['day'], limit=5)
+
+    for data in json_data:
+        methods.send_photo(get_last_chat_id(), data['file_url'])
+        sleep(3)
 
 
-# def main():
-#     last_update = get_last_update_result()
-#     update_id = last_update['update_id']
-#
-#     while True:
-#         new_update = get_last_update_result()
-#         new_update_id = new_update['update_id']
-#         if new_update_id == update_id:
-#
-#             last_cmd = get_last_commands()
-#             handle_cmd(last_cmd)
-#
-#             update_id += 1
-#         sleep(2)
-#
-#
-# if __name__ == '__main__':
-#     try:
-#         main()
-#     except KeyboardInterrupt:
-#         exit()
+def main():
+    last_update = get_last_update_result()
+    update_id = last_update['update_id']
+
+    while True:
+        new_update = get_last_update_result()
+        new_update_id = new_update['update_id']
+        if new_update_id == update_id:
+
+            last_cmd = get_last_commands()
+            handle_cmd(last_cmd)
+
+            update_id += 1
+        sleep(3)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        exit()

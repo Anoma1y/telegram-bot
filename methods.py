@@ -1,5 +1,7 @@
 import config as CONFIG
 import requests
+import json
+from urllib.parse import unquote_plus, unquote, quote, quote_plus
 
 url = 'https://api.telegram.org/bot' + CONFIG.TOKEN + '/'
 
@@ -30,7 +32,7 @@ def send_message(chat_id, text, disable_web_page_preview=None):
         params.update({
             'disable_web_page_preview': True
         })
-    return requests.post(url + 'sendMessage', data=params)
+    return requests.post(url + 'sendMessage', params=params)
 
 
 # sendPhoto - send photo
@@ -45,5 +47,17 @@ def send_photo(chat_id, photo, caption=None):
             'caption': 'test'
         })
 
-    return requests.post(url + 'sendPhoto', data=params)
+    return requests.post(url + 'sendPhoto', params=params)
 
+
+# sendMediaGroup - send album
+def send_album(chat_id, media):
+    params = {
+        'chat_id': chat_id,
+        'media': json.dumps(media)
+    }
+
+    request = requests.post(url + 'sendMediaGroup', params=params)
+    print(request.url)
+
+    return requests
