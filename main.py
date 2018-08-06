@@ -31,7 +31,7 @@ def webhook_handler():
             if update.message.text == '/get_loli':
                 send_album(chat_id)
             else:
-                bot.send_message(chat_id=chat_id, text="hello")
+                bot.sendMessage(chat_id=chat_id, text="hello")
         except Exception as e:
             print("type error: " + str(e))
     return 'ok'
@@ -62,33 +62,31 @@ unix_time = {
 }
 
 
-
 def send_album(chat_id):
     json_data = yandere.get_images(page_limit=3, tags='loli', period_time=unix_time['day'], limit=5)
 
     for data in json_data:
-        bot.send_photo(chat_id=chat_id, photo=data['file_url'])
-        sleep(3)
+        bot.sendPhoto(chat_id=chat_id, photo=data['file_url'])
 
 
 def error():
     pass
 
 
-# # get last updates (message from bot)
-# def get_last_update_result():
-#     update_json = methods.get_update_json()  # getUpdate
-#     result = update_json['result']  # parse json and get result
-#     last_result = len(result) - 1  # get last result
-#     return result[last_result]
-#
-#
-# # get id user
-# def get_last_chat_id():
-#     last_result = get_last_update_result()  # get json result
-#     chat_id = last_result['message']['chat']['id']
-#     return chat_id
-#
+# get last updates (message from bot)
+def get_last_update_result():
+    update_json = methods.get_update_json()  # getUpdate
+    result = update_json['result']  # parse json and get result
+    last_result = len(result) - 1  # get last result
+    return result[last_result]
+
+
+# get id user
+def get_last_chat_id():
+    last_result = get_last_update_result()  # get json result
+    chat_id = last_result['message']['chat']['id']
+    return chat_id
+
 #
 # def get_last_commands():
 #     last_result = get_last_update_result()
