@@ -64,18 +64,21 @@ def get_images(page_limit=10, tags=None, period_time=86400, limit=10):
 
         for item in json:
             item_time = int(unix_secs) - int(item['created_at'])
+
             if item_time > int(period_time):
                 is_find = False
                 break
+
             if item['file_size'] > LIMIT_FILE_SIZE:
-                current_limit = current_limit + 1
                 continue
+
             images.append(item)
 
             if len(images) >= current_limit:
+
+                print(len(images))
                 return images
 
         page = page + 1
-
     return images
 

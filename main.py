@@ -62,6 +62,7 @@ unix_time = {
 }
 
 
+
 def send_album(chat_id):
     json_data = yandere.get_images(page_limit=3, tags='loli', period_time=unix_time['day'], limit=5)
 
