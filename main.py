@@ -5,6 +5,7 @@ import telegram
 from telegram.ext import Updater
 import methods
 import yandere
+import asyncio
 from time import sleep
 import config as CONFIG
 
@@ -17,6 +18,7 @@ global bot
 bot = telegram.Bot(token=CONFIG.TOKEN)
 
 URL = '207.154.250.14'
+
 
 
 @app.route('/pudge', methods=['POST', 'GET'])
@@ -75,7 +77,8 @@ def invalid_cmd(chat_id, cmd):
 # get command list
 def get_help_command_list(chat_id):
     help_doc = 'Список доступных команд:\n'
-    help_doc += '\t\t/image - Получить картинку\n'
+    help_doc += '\t\t/image {{tag}} - Получить последние картинки за 1 неделю\n'
+    help_doc += '\t\t/tags - Получить все популярные теги\n'
     help_doc += '\t\t/help - Список команд\n'
     bot.sendMessage(chat_id=chat_id, text=help_doc)
 
@@ -85,6 +88,8 @@ def handle_cmd(command, chat_id):
 
     if main_command == '/image':
         send_album(chat_id, command)
+    elif main_command == '/tags':
+        send_tags(chat_id)
     elif main_command == '/help':
         get_help_command_list(chat_id)
     else:
@@ -103,62 +108,12 @@ def send_album(chat_id, command):
         bot.sendPhoto(chat_id=chat_id, photo=data['file_url'])
 
 
+def send_tags(chat_id):
+    tags_list = yandere.get_available_tags()
+
+    if len(tags_list) > 0:
+        bot.sendMessage(chat_id=chat_id, text=tags_list)
+
+
 def error():
     pass
-
-
-# get last updates (message from bot)
-def get_last_update_result():
-    update_json = methods.get_update_json()  # getUpdate
-    result = update_json['result']  # parse json and get result
-    last_result = len(result) - 1  # get last result
-    return result[last_result]
-
-
-# get id user
-def get_last_chat_id():
-    last_result = get_last_update_result()  # get json result
-    chat_id = last_result['message']['chat']['id']
-    return chat_id
-
-#
-# def get_last_commands():
-#     last_result = get_last_update_result()
-#     text = last_result['message']['text']
-#     return text
-#
-#
-
-#
-#
-
-#
-#
-# # handler command
-
-#
-#
-
-
-
-# def main():
-#     last_update = get_last_update_result()
-#     update_id = last_update['update_id']
-#
-#     while True:
-#         new_update = get_last_update_result()
-#         new_update_id = new_update['update_id']
-#         if new_update_id == update_id:
-#
-#             last_cmd = get_last_commands()
-#             handle_cmd(last_cmd)
-#
-#             update_id += 1
-#         sleep(3)
-
-
-#if __name__ == '__main__':
-#    try:
-#        main()
-#    except KeyboardInterrupt:
-#        exit()
