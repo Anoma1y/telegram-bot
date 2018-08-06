@@ -22,7 +22,7 @@ bot = telegram.Bot(token=CONFIG.TOKEN)
 URL = '207.154.250.14'
 
 
-@app.route('/HOOK', methods=['POST', 'GET'])
+@app.route('/pudge', methods=['POST', 'GET'])
 def webhook_handler():
     if request.method == "POST":
         update = telegram.Update.de_json(request.get_json(force=True), bot)
@@ -39,7 +39,7 @@ def webhook_handler():
 
 @app.route('/set_webhook', methods=['GET', 'POST'])
 def set_webhook():
-    s = bot.setWebhook('https://%s:443/HOOK' % URL, certificate=open('/etc/ssl/server.crt', 'rb'))
+    s = bot.setWebhook('https://%s:443/pudge' % URL, certificate=open('/etc/ssl/server.crt', 'rb'))
     if s:
         print(s)
         return "webhook setup ok"
@@ -63,7 +63,7 @@ unix_time = {
 
 
 def send_album(chat_id):
-    json_data = yandere.get_images(page_limit=3, tags='loli', period_time=unix_time['day'], limit=5)
+    json_data = yandere.get_images(page_limit=3, tags='loli', period_time=unix_time['week'], limit=5)
 
     for data in json_data:
         bot.sendPhoto(chat_id=chat_id, photo=data['file_url'])
