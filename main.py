@@ -92,9 +92,12 @@ def handle_cmd(command, chat_id):
 
 
 def send_album(chat_id, command):
-    tags = command.split(' ', maxsplit=1)[1]
+    tags = command.split(' ', maxsplit=1)
 
-    json_data = yandere.get_images(page_limit=3, tags=tags, period_time=unix_time['day'], limit=5)
+    if len(tags) <= 1:
+        tags = None
+
+    json_data = yandere.get_images(page_limit=3, tags=tags[1], period_time=unix_time['week'], limit=5)
 
     for data in json_data:
         bot.sendPhoto(chat_id=chat_id, photo=data['file_url'])
