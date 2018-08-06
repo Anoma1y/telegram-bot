@@ -3,12 +3,12 @@
 from flask import Flask, request
 import telegram
 import methods
+import yandere
 from time import sleep
-# import postgresql
+import postgresql
 import config as CONFIG
 
 # db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
-import yandere
 
 
 app = Flask(__name__)
