@@ -6,10 +6,7 @@ from telegram.ext import Updater
 import methods
 import yandere
 from time import sleep
-import postgresql
 import config as CONFIG
-
-# db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 
 
 app = Flask(__name__)
@@ -28,10 +25,12 @@ def webhook_handler():
         update = telegram.Update.de_json(request.get_json(force=True), bot)
         try:
             chat_id = update.message.chat.id
-            if update.message.text == '/get_loli':
-                send_album(chat_id)
+            command = update.message.text
+
+            if command:
+                handle_cmd(command, chat_id)
             else:
-                bot.sendMessage(chat_id=chat_id, text="hello")
+                invalid_cmd(chat_id=chat_id, cmd=command)
         except Exception as e:
             print("type error: " + str(e))
     return 'ok'
@@ -62,8 +61,38 @@ unix_time = {
 }
 
 
+def get_image():
+    pass
+
+
+# invalid command
+def invalid_cmd(chat_id, cmd):
+    msg = 'Команда ' + cmd + ' не найдена\n'
+    msg += 'Для получения списка доступных команд, напишите /help'
+    bot.sendMessage(chat_id=chat_id, text=msg)
+
+
+# get command list
+def get_help_command_list(chat_id):
+    file = open("telegram_help.txt", 'r', encoding='utf-8')
+    help_doc = ''
+    if file.mode == 'r':
+        help_doc = file.read().encode('UTF-8')
+    bot.sendMessage(chat_id=chat_id, text=help_doc)
+
+
+def handle_cmd(command, chat_id):
+
+    if command == '/image':
+        send_album(chat_id)
+    elif command == '/help':
+        get_help_command_list(chat_id)
+    else:
+        invalid_cmd(chat_id, command)
+
+
 def send_album(chat_id):
-    json_data = yandere.get_images(page_limit=3, tags='loli', period_time=unix_time['week'], limit=5)
+    json_data = yandere.get_images(page_limit=3, tags='loli', period_time=unix_time['day'], limit=5)
 
     for data in json_data:
         bot.sendPhoto(chat_id=chat_id, photo=data['file_url'])
@@ -94,37 +123,14 @@ def get_last_chat_id():
 #     return text
 #
 #
-# # invalid command
-# def invalid_cmd(chat_id, command):
-#     msg = 'Команда ' + command + ' не найдена\n'
-#     msg += 'Для получения списка доступных команд, напишите /help'
-#     methods.send_message(chat_id, msg)
+
 #
 #
-# # get command list
-# def get_help_command_list(chat_id):
-#     file = open("telegram_help.txt", 'r', encoding='utf-8')
-#     help_doc = ''
-#     if file.mode == 'r':
-#         help_doc = file.read().encode('UTF-8')
-#     methods.send_message(chat_id, help_doc)
+
 #
 #
 # # handler command
-# def handle_cmd(command):
-#     chat_id = get_last_chat_id()
-#
-#     if command == '/start':
-#         methods.send_message(chat_id, 'Hello World')
-#     elif command == '/close':
-#         methods.send_message(chat_id, 'Closing the Telegram Bot')
-#         exit()
-#     elif command == '/image':
-#         methods.send_photo(chat_id, 'http://image.noelshack.com/fichiers/2015/33/1439306897-169413-jpg.jpeg')
-#     elif command == '/help':
-#         get_help_command_list(chat_id)
-#     else:
-#         invalid_cmd(chat_id, command)
+
 #
 #
 
