@@ -81,19 +81,20 @@ def get_help_command_list(chat_id):
 
 
 def handle_cmd(command, chat_id):
+    main_command = command.split(' ', maxsplit=1)[0]
 
-    if command == '/image':
+    if main_command == '/image':
         send_album(chat_id, command)
-    elif command == '/help':
+    elif main_command == '/help':
         get_help_command_list(chat_id)
     else:
-        invalid_cmd(chat_id, command)
+        invalid_cmd(chat_id, main_command)
 
 
 def send_album(chat_id, command):
-    command = command.split(' ', maxsplit=1)
+    tags = command.split(' ', maxsplit=1)[1]
 
-    json_data = yandere.get_images(page_limit=3, tags=command[1], period_time=unix_time['day'], limit=5)
+    json_data = yandere.get_images(page_limit=3, tags=tags, period_time=unix_time['day'], limit=5)
 
     for data in json_data:
         bot.sendPhoto(chat_id=chat_id, photo=data['file_url'])
