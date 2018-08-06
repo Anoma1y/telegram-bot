@@ -5,6 +5,7 @@ import time
 url = 'https://yande.re/'
 LIMIT_FILE_SIZE = 5000000
 
+
 def pull_tags(page, limit, order):
     params = {
         'page': page,
