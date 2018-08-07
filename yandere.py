@@ -51,7 +51,7 @@ def get_available_tags(tag_name):
 
 
 # ________
-# ( loli? )
+# ( lolei? )
 #  --------
 #         o   ^__^
 #          o  (oo)\_______

@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
-import methods
 import logging
+import postgresql
 import yandere
 import config as CONFIG
 from time import sleep
 
+db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 
 unix_time = {
     'minute': 60,
@@ -87,9 +88,24 @@ def error():
     pass
 
 
+# import re
+#
+# day = re.search('(\d+)(\s+)?(секунды?|минуты?|час|день|дней|дня|недел[иья]|месяца?|года?|лет)(\s+)?[и,]?(\s+)?', '1 час и 10 минут')
+#
+# print(day)
+
+
+
+
 def text_message(bot, update):
     response = 'Получил Ваше сообщение: ' + update.message.text
     bot.send_message(chat_id=update.message.chat_id, text=response)
+
+
+def set_notification(bot, update):
+    ins = db.prepare("INSERT INTO reminder (user_id, creator_id, message, notify_at) VALUES (24787878232, 545777888833, 'Тестовый с питона', 'now()')")
+
+    bot.send_message(chat_id=update.message.chat_id, text='Добавлено')
 
 
 updater = Updater(token=CONFIG.TOKEN)
@@ -98,8 +114,12 @@ dispatcher = updater.dispatcher
 
 @run_async
 def starter(bot, update):
+    print('Hui start')
     while True:
-        print('loop')
+        pass
+        get_emp_with_salary_lt = db.query("SELECT message FROM reminder WHERE notify_at > now()")
+
+        print(get_emp_with_salary_lt)
         sleep(2)
 
 
@@ -110,11 +130,13 @@ def main():
         tags_command_handler = CommandHandler('tags', send_tags)
         image_command_handler = CommandHandler('image', send_album)
         help_command_handler = CommandHandler('help', get_help_command_list)
+        set_command_handler = CommandHandler('set', set_notification)
 
         dispatcher.add_handler(start_command_handler)
         dispatcher.add_handler(tags_command_handler)
         dispatcher.add_handler(image_command_handler)
         dispatcher.add_handler(help_command_handler)
+        dispatcher.add_handler(set_command_handler)
         dispatcher.add_handler(text_message_handler)
         # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -124,9 +146,9 @@ def main():
     except Exception as e:
         print("type error: " + str(e))
 
-
-if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        exit()
+#
+# if __name__ == '__main__':
+#     try:
+#         main()
+#     except KeyboardInterrupt:
+#         exit()
