@@ -6,11 +6,12 @@ url = 'https://yande.re/'
 LIMIT_FILE_SIZE = 5000000
 
 
-def pull_tags(page, limit, order):
+def pull_tags(page, limit, order, name):
     params = {
         'page': page,
         'limit': limit,
-        'order': order
+        'order': order,
+        'name': name
     }
 
     response = requests.get(url + 'tag.json', params=params)
@@ -34,9 +35,9 @@ def pull_images(page, page_limit, tags):
     return response.json()
 
 
-def get_available_tags():
+def get_available_tags(tag_name):
     tags_str = ''
-    tags = pull_tags(page=1, limit=100, order='count')
+    tags = pull_tags(page=1, limit=100, order='count', name=tag_name)
     index = 0
 
     while index < len(tags):
@@ -49,6 +50,14 @@ def get_available_tags():
     return tags_str.strip()
 
 
+# ________
+# ( loli? )
+#  --------
+#         o   ^__^
+#          o  (oo)\_______
+#             (__)\       )\/\
+#                 ||----w |
+#                 ||     ||
 def get_images(page_limit=10, tags=None, period_time=86400, limit=10):
     current_limit = limit
     unix_secs = time.mktime(datetime.now().timetuple())  # current unix-time
