@@ -1,12 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import telegram
+import re
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
 import logging
 import postgresql
 import yandere
 import config as CONFIG
-from time import sleep
+import datetime
+from time import *
 
 db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 
@@ -88,13 +90,150 @@ def error():
     pass
 
 
-# import re
-#
+remind1 = 'напомни мне в июле 2019 сделать таск'
+remind3 = 'напомни мне через 1 час встреча с кем то там'
+remind4 = 'напомни мне через 4 дня 2 часа 5 минут и 10 секунд пойти погулять'
+remind5 = 'напомни мне 14 августа 2018 в 10 часов сходить купить поесть'
+
+remind2 = 'напомни мне сегодня в 10 вечера купить что то'
+
+time_data = {
+    'at': ['утра', 'дня', 'вечера']
+}
+
+
+class Handler:
+    def __init__(self):
+        pass
+
+    def handle(self, slice):
+        pass
+
+    def is_match(self, val):
+        pass
+
+
+class InHandler(Handler):
+    def handle(self, slice):
+        pass
+
+    def is_match(self, val):
+        return val[0].lower() == 'в'
+
+
+class AtHandler(Handler):
+    def handle(self, slice):
+        pass
+
+    def is_match(self, val):
+        return val[0].lower() == 'через'
+
+
+class TodayHandler(Handler):
+    def handle(self, slice):
+        return (
+            time(),
+            slice[1:]
+        )
+
+    def is_match(self, val):
+        return val[0].lower() == 'сегодня'
+
+
+class Reminder:
+
+    def __init__(self, msg):
+        self.msg = msg
+        self.msg_arr = []
+        self.msg_arr_slice = []
+        self.time = None
+        self.date = {
+            'is_today': False,
+            'is_tommorow': False
+        }
+        self.handlers = [
+            InHandler(),
+            AtHandler(),
+            TodayHandler()
+        ]
+
+    def parse_command(self):
+        remind_word = 'напомни мне'
+        msg = re.sub('\s+', ' ', self.msg)
+
+        if re.search(remind_word, msg.lower()):
+            if re.search('^что\s', msg[len(remind_word):].strip()):
+                self.set_msg_arr(msg[(len(remind_word) + 5):].strip().split(' '))
+            self.set_msg_arr(msg[len(remind_word):].strip().split(' '))
+        else:
+            self.set_msg_arr('')
+
+    def set_msg_arr(self, msg):
+        self.msg_arr = msg
+
+    def set_time(self, time):
+        self.time = time
+
+    def set_msg_arr_slice(self, msg):
+        self.msg_arr_slice = msg
+
+    def start(self):
+        self.parse_command()
+        self.set_msg_arr_slice(self.msg_arr)
+        is_check = True
+
+        while is_check:
+
+            for handle in self.handlers:
+                if handle.is_match(val=self.msg_arr):
+                    slice = handle.handle(self.msg_arr_slice)
+
+                    is_check = False
+                    # self.set_msg_arr_slice(slice)
+
+
+        # for i in range(len(self.msg_arr)):
+        #     for handle in self.handlers:
+        #         if handle.is_match(val=self.msg_arr):
+
+            # msg = self.msg_arr[i]
+            # self.handlers
+            # print(self.msg_arr)
+        #
+        #     if (i == 0) and (msg == 'сегодня'):
+        #         self._today()
+        #
+        #     if i != 0 and msg == 'в':
+        #
+        #         if re.search('\d', self.msg_arr[i + 1]):
+        #             digit_time = self.msg_arr[i + 1]
+        #
+        #             if self.msg_arr[i + 2] in time_data['at']:
+        #
+        #                 day_of_time = self.msg_arr[i + 2]
+        #                 print(digit_time, day_of_time)
+        #
+        #     elif msg == 'через':
+        #         self._in()
+
+
+
+
+
+fuck = Reminder(msg='напомни мне сегодня в 10 вечера купить что то')
+# fuck = Reminder(msg='напомни мне через 3 часа купить что то')
+fuck.start()
+# fuck.set_msg_arr()
+# fuck.print_msg()
+
 # day = re.search('(\d+)(\s+)?(секунды?|минуты?|час|день|дней|дня|недел[иья]|месяца?|года?|лет)(\s+)?[и,]?(\s+)?', '1 час и 10 минут')
-#
+
+"hello {name} today is {weekday}".format(
+    name="john",
+    weekday="sunday"
+)
+
 # print(day)
-
-
 
 
 def text_message(bot, update):
