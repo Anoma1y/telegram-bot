@@ -98,7 +98,70 @@ remind5 = 'напомни мне 14 августа 2018 в 10 часов схо�
 remind2 = 'напомни мне сегодня в 10 вечера купить что то'
 
 time_data = {
-    'at': ['утра', 'дня', 'вечера']
+    'in': {
+        'утро': {
+            'шесть': 6,
+            'семь': 7,
+            'восемь': 8,
+            'девять': 9,
+            'десять': 10,
+            'одиннадцать': 11,
+            'двенадцать': 12,
+            '6': 6,
+            '7': 7,
+            '8': 8,
+            '9': 9,
+            '10': 10,
+            '11': 11,
+            '12': 12
+        },
+        'день': {
+            'час': 13,
+            'два': 14,
+            'три': 15,
+            'четыре': 16,
+            'пять': 17,
+            'шесть': 18,
+            '1': 13,
+            '2': 14,
+            '3': 15,
+            '4': 16,
+            '5': 17,
+            '6': 18
+        },
+        'вечер': {
+            'шесть': 18,
+            'семь': 19,
+            'восемь': 20,
+            'девять': 21,
+            'десять': 22,
+            'одиннадцать': 23,
+            'двенадцать': 00,
+            '6': 18,
+            '7': 19,
+            '8': 20,
+            '9': 21,
+            '10': 22,
+            '11': 23,
+            '12': 0
+        },
+        'ночь': {
+            'двенадцать': 0,
+            'час': 1,
+            'два': 2,
+            'три': 3,
+            'четыре': 4,
+            'пять': 5,
+            'шесть': 6,
+            '12': 00,
+            '1': 1,
+            '2': 2,
+            '3': 3,
+            '4': 4,
+            '5': 5,
+            '6': 6,
+        }
+    }
 }
 
 
@@ -106,23 +169,136 @@ class Handler:
     def __init__(self):
         pass
 
-    def handle(self, slice):
+    def handle(self, slice, current_time):
         pass
 
     def is_match(self, val):
         pass
 
+    # Функция для добавления нового времени
+    # @params current_time - текущее время
+    # @params new_time - массив нового времени [0] - часы, [1] - минуты, [2] - секунды
+    # return - новое значение времени (старая дата и новое время), если введеное время меньше,
+    # чем текущее и больше чем текущее менее чем на 5 минут, возвращает False
+    @staticmethod
+    def handle_time(current_time, *new_time):
+
+        d = current_time.date()
+        h = int(new_time[0])
+        m = int(new_time[1])
+        s = int(new_time[2])
+
+        h = h if h >= 0 or h <= 24 else 0
+        h = 0 if h == 24 else h
+        m = m if m >= 0 or m <= 59 else 0
+        s = s if s >= 0 or s <= 59 else 0
+
+        t = datetime.time(h, m, s)
+        c_t = datetime.datetime.now()
+
+        # if c_t.time() > t:
+        #     return False
+
+        new_time = datetime.datetime.combine(d, t)
+
+        return new_time
+
+    @staticmethod
+    def parse_time(available_time_arr, times_of_day=None):
+        h = 0
+        m = 0
+        s = 0
+
+        for t in available_time_arr:
+
+            if re.search('часо?в?', t[1]):
+                if times_of_day is None:
+                    h = t[0]
+
+                else:
+                    if re.search('(вечера?о?м?)', times_of_day):
+                        h = time_data['in']['вечер'][t[0]]
+                    elif re.search('(утра?о?м?)', times_of_day):
+                        h = time_data['in']['утро'][t[0]]
+                    elif re.search('(ночи?ь?ю?)', times_of_day):
+                        h = time_data['in']['ночь'][t[0]]
+                    elif re.search('(дня)', times_of_day):
+                        h = time_data['in']['день'][t[0]]
+
+            elif re.search('минуты?', t[1]):
+                m = t[0]
+
+            elif re.search('секунды?', t[1]):
+                s = t[0]
+
+        return (
+            h,
+            m,
+            s
+        )
+
 
 class InHandler(Handler):
-    def handle(self, slice):
-        pass
+    def handle(self, msg_slice, current_time):
+        msg_slice = msg_slice[1:]
+
+        if re.search('\d\d?', msg_slice[0]) and re.search('(часо?в?|минуты?|секунды?)', msg_slice[1]):
+            time_arr = msg_slice[:]
+            available_time_arr = []
+            times_of_day = None
+
+            for t in range(len(time_arr)):
+                if re.search('\d\d?', time_arr[t]) and re.search('(часо?в?|минуты?|секунды?)', time_arr[t + 1]):
+                    available_time_arr.append([time_arr[t], time_arr[t + 1]])
+
+                if re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', time_arr[t]):
+                    times_of_day = time_arr[t]
+
+            if len(available_time_arr) != 0:
+                (hh, mm, ss) = self.parse_time(available_time_arr, times_of_day)
+                print(self.handle_time(current_time, hh, mm, ss))
+
+        # if (re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0])) \
+        #         and (re.search('(вечера|утра|ночи|дня)', msg_slice[1]) or (re.search('часо?в?', msg_slice[1]) and re.search('(вечера|утра|ночи|дня)', msg_slice[2]))):
+        #     pass
+            # self.handle_times_of_day(current_time, msg_slice)
+
+        # if re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0]):
+        #     current_time = self.handle_times_absolute(current_time, msg_slice)
+
+        else:
+            return False
+
+        return {
+            'time': current_time,
+            'msg': msg_slice[1:]
+        }
 
     def is_match(self, val):
         return val[0].lower() == 'в'
 
+    def handle_times_of_day(self, current_time, msg):
+        split_time = msg[0].split(':')
+        print(split_time)
+        if re.search('часо?в?', msg[1]):  # msg[1] = <часов> ?
+
+            pass
+
+    def handle_times_absolute(self, current_time, msg):
+        split_time = msg[0].split(':') # 1-24
+
+        if len(split_time) != 0:
+            hours = split_time[0]
+            minutes = split_time[1] if len(split_time) == 2 else 0
+            return self.handle_time(current_time, hours, minutes, 0)
+        else:
+            return False
+
 
 class AtHandler(Handler):
-    def handle(self, slice):
+    def handle(self, slice, current_time):
+        print('is_match: через')
+
         pass
 
     def is_match(self, val):
@@ -130,11 +306,12 @@ class AtHandler(Handler):
 
 
 class TodayHandler(Handler):
-    def handle(self, slice):
-        return (
-            time(),
-            slice[1:]
-        )
+    def handle(self, slice, current_time):
+
+        return {
+            'time': datetime.datetime.now(),
+            'msg': slice[1:]
+        }
 
     def is_match(self, val):
         return val[0].lower() == 'сегодня'
@@ -147,6 +324,7 @@ class Reminder:
         self.msg_arr = []
         self.msg_arr_slice = []
         self.time = None
+        self.previous = ''
         self.date = {
             'is_today': False,
             'is_tommorow': False
@@ -174,6 +352,9 @@ class Reminder:
     def set_time(self, time):
         self.time = time
 
+    def set_previous(self, val):
+        self.previous = val
+
     def set_msg_arr_slice(self, msg):
         self.msg_arr_slice = msg
 
@@ -185,13 +366,17 @@ class Reminder:
         while is_check:
 
             for handle in self.handlers:
-                if handle.is_match(val=self.msg_arr):
-                    slice = handle.handle(self.msg_arr_slice)
 
-                    is_check = False
-                    # self.set_msg_arr_slice(slice)
+                if handle.is_match(val=self.msg_arr_slice):
+                    slice = handle.handle(self.msg_arr_slice, self.time)
 
+                    self.set_msg_arr_slice(slice['msg'])
+                    self.set_time(slice['time'])
 
+            sleep(1)
+            # print(self.time)
+
+        print('Done')
         # for i in range(len(self.msg_arr)):
         #     for handle in self.handlers:
         #         if handle.is_match(val=self.msg_arr):
@@ -220,7 +405,7 @@ class Reminder:
 
 
 
-fuck = Reminder(msg='напомни мне сегодня в 10 вечера купить что то')
+fuck = Reminder(msg='напомни мне сегодня в 3 час 15 минут и 17 секунд дня купить что то')
 # fuck = Reminder(msg='напомни мне через 3 часа купить что то')
 fuck.start()
 # fuck.set_msg_arr()
