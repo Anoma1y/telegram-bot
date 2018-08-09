@@ -175,7 +175,7 @@ class Handler:
     def is_match(self, val):
         pass
 
-    # Функция для добавления нового времени
+    # Статический метод для добавления нового времени
     # @params current_time - текущее время
     # @params new_time - массив нового времени [0] - часы, [1] - минуты, [2] - секунды
     # return - новое значение времени (старая дата и новое время), если введеное время меньше,
@@ -203,6 +203,10 @@ class Handler:
 
         return new_time
 
+    # Статический метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
+    # @params available_time_arr - массив массивов времени [[\d\, \str\]]
+    # @params times_of_day - модификатор времени (по дефолту равен None)
+    # return - новое значение времени (h - часы, m - минуты, s - секунды)
     @staticmethod
     def parse_time(available_time_arr, times_of_day=None):
         h = 0
