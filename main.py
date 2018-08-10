@@ -235,6 +235,28 @@ class Handler:
 
         return td
 
+    # Метод которые возвщатает время в зависимости от модификатора времени (утром, днем, вечером, ночью)
+    # @params times_of_day - модификатор времени (по дефолту равен None)
+    # @params hours - часы
+    # return - новое значение времени (h - часы, m - минуты, s - секунды)
+    @staticmethod
+    def handle_set_time_times_of_day(times_of_day, hours):
+        h = hours
+
+        if re.search('(вечера?о?м?)', times_of_day):
+            h = time_data['in']['вечер'][hours]
+
+        elif re.search('(утра?о?м?)', times_of_day):
+            h = time_data['in']['утро'][hours]
+
+        elif re.search('(ночи?ь?ю?)', times_of_day):
+            h = time_data['in']['ночь'][hours]
+
+        elif re.search('(дня)', times_of_day):
+            h = time_data['in']['день'][hours]
+
+        return h
+
     # Статический метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
     # @params available_time_arr - массив массивов времени [[\d\, \str\]]
     # @params times_of_day - модификатор времени (по дефолту равен None)
@@ -252,14 +274,7 @@ class Handler:
                     h = t[0]
 
                 else:
-                    if re.search('(вечера?о?м?)', times_of_day):
-                        h = time_data['in']['вечер'][t[0]]
-                    elif re.search('(утра?о?м?)', times_of_day):
-                        h = time_data['in']['утро'][t[0]]
-                    elif re.search('(ночи?ь?ю?)', times_of_day):
-                        h = time_data['in']['ночь'][t[0]]
-                    elif re.search('(дня)', times_of_day):
-                        h = time_data['in']['день'][t[0]]
+                    h = Handler.handle_set_time_times_of_day(times_of_day, t[0])
 
             elif re.search('минуты?', t[1]):
                 m = t[0]
@@ -307,10 +322,19 @@ class Handler:
         )
 
     def parse_absolute_times_from_slice(self, msg_slice, current_time):
-        offset = 0
+        offset = 1
         time_arr = msg_slice[0].split(':')
+        times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
+
+        if re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', msg_slice[1]):
+            times_of_day = msg_slice[1]
+            offset = offset + 1
 
         hh = time_arr[0] if time_arr[0] in time_arr else 0
+
+        if times_of_day is not None:
+            hh = Handler.handle_set_time_times_of_day(times_of_day, hh)
+
         mm = time_arr[1] if len(time_arr) == 2 else 0
         ss = time_arr[2] if len(time_arr) == 3 else 0
 
@@ -330,14 +354,8 @@ class InHandler(Handler):
         if re.search('\d\d?', msg_slice[0]) and re.search('(часо?в?|минуты?|секунды?)', msg_slice[1]):
             (new_current_time, new_msg_slice) = self.parse_times_from_slice(msg_slice, current_time)
 
-        # if (re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0])) \
-        #         and (re.search('(вечера|утра|ночи|дня)', msg_slice[1]) or (re.search('часо?в?', msg_slice[1]) and re.search('(вечера|утра|ночи|дня)', msg_slice[2]))):
-        #     pass
-            # self.handle_times_of_day(current_time, msg_slice)
-
         elif re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0]):
             (new_current_time, new_msg_slice) = self.parse_absolute_times_from_slice(msg_slice, current_time)
-            pass
 
         else:
             return False
@@ -517,7 +535,8 @@ class Reminder:
         print('Done')
 
 
-reminder = Reminder(msg='напомни мне завтра в 23:44 купить дилдак по скидке')
+reminder = Reminder(msg='напомни мне послезавтра в 8 часов 15 минут утра купить дилдак по скидке')
+# reminder = Reminder(msg='напомни мне завтра в 11 часов 10 минут и 15 секунд вечера купить дилдак по скидке')
 reminder.start()
 
 # day = re.search('(\d+)(\s+)?(секунды?|минуты?|час|день|дней|дня|недел[иья]|месяца?|года?|лет)(\s+)?[и,]?(\s+)?', '1 час и 10 минут')
