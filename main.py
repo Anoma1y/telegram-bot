@@ -8,6 +8,7 @@ import logging
 import yandere
 import config as CONFIG
 import datetime
+from calendar import monthrange
 from time import *
 
 # db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
@@ -176,32 +177,59 @@ class Handler:
         pass
 
     # Статический метод для добавления нового времени
-    # @params current_time - текущее время
+    # @params current_time - текущее время ------------------
     # @params new_time - массив нового времени [0] - часы, [1] - минуты, [2] - секунды
     # return - новое значение времени (старая дата и новое время), если введеное время меньше,
     # чем текущее и больше чем текущее менее чем на 5 минут, возвращает False
     @staticmethod
-    def handle_time(current_time, *new_time):
+    def handle_time(*new_time):
 
-        d = current_time.date()
-        h = int(new_time[0])
-        m = int(new_time[1])
-        s = int(new_time[2])
+        hour = int(new_time[0])
+        minute = int(new_time[1])
+        second = int(new_time[2])
 
-        h = h if h >= 0 or h <= 24 else 0
-        h = 0 if h == 24 else h
-        m = m if m >= 0 or m <= 59 else 0
-        s = s if s >= 0 or s <= 59 else 0
+        hour = hour if hour >= 0 or hour <= 24 else 0
+        hour = 0 if hour == 24 else hour
+        minute = minute if minute >= 0 or minute <= 59 else 0
+        second = second if second >= 0 or second <= 59 else 0
 
-        t = datetime.time(h, m, s)
+        t = datetime.time(hour, minute, second)
+
+        return t
+
+    @staticmethod
+    def handle_date(*new_date):
+        day = int(new_date[0])
+        month = int(new_date[1])
+        year = int(new_date[2])
+
+        c_d = datetime.datetime.now()
+
+        if (day >= 1 and day <= monthrange(year, month)[1]) is False:
+            return False
+
+        elif (month >= 1 and month <= 12) is False:
+            return False
+
+        elif year < int(c_d.date().year):
+            return False
+
+        d = datetime.date(year, month, day)
+
+        if d < c_d.date():
+            return False
+
+        return d
+
+    @staticmethod
+    def set_time(d, t):
         c_t = datetime.datetime.now()
+        td = datetime.datetime.combine(d, t)
 
-        # if c_t.time() > t:
-        #     return False
+        if c_t > td:
+            return False
 
-        new_time = datetime.datetime.combine(d, t)
-
-        return new_time
+        return td
 
     # Статический метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
     # @params available_time_arr - массив массивов времени [[\d\, \str\]]
@@ -241,11 +269,15 @@ class Handler:
             s
         )
 
+    # Метод для парсинга времени в текстовом формате (1 час, 5 минут и тп)
+    # @params msg_slice - массив сообщения
+    # @params current_time - текущее время, созданное в классе Reminder
+    # return - кортеж: новое значение времени (h - часы, m - минуты, s - секунды) и обрезанное сообщение
     def parse_times_from_slice(self, msg_slice, current_time):
         offset = 0
         time_arr = msg_slice[:]
         available_time_arr = []
-        times_of_day = None
+        times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
 
         for t in range(len(time_arr)):
             if re.search('\d\d?', time_arr[t]) and re.search('(часо?в?|минуты?|секунды?)', time_arr[t + 1]):
@@ -261,11 +293,21 @@ class Handler:
 
         if len(available_time_arr) != 0:
             (hh, mm, ss) = self.parse_time(available_time_arr, times_of_day)
-            current_time = self.handle_time(current_time, hh, mm, ss)
+            new_time = self.handle_time(hh, mm, ss)
+            # print(current_time.date())
+            # new_current_datetime = current_time
+            new_current_datetime = self.set_time(current_time.date(), new_time)
 
         return (
-            current_time,
+            new_current_datetime,
             msg_slice[offset:]
+        )
+
+    def parse_absolute_times_from_slice(self, msg_slice, current_time):
+        print('1')
+        return (
+            current_time,
+            msg_slice
         )
 
 
@@ -281,8 +323,9 @@ class InHandler(Handler):
         #     pass
             # self.handle_times_of_day(current_time, msg_slice)
 
-        # if re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0]):
-        #     current_time = self.handle_times_absolute(current_time, msg_slice)
+        elif re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0]):
+            (new_current_time, new_msg_slice) = self.parse_absolute_times_from_slice(msg_slice, current_time)
+            pass
 
         else:
             return False
@@ -325,9 +368,10 @@ class AtHandler(Handler):
 
 class TodayHandler(Handler):
     def handle(self, slice, current_time):
+        c_d = datetime.datetime.now()
 
         return {
-            'time': datetime.datetime.now(),
+            'time': c_d,
             'msg': slice[1:]
         }
 
@@ -404,38 +448,12 @@ class Reminder:
                     self.time = slice['time']
 
             sleep(1)
-            print(self.time)
+            print('Reminder time: ', self.time)
 
         print('Done')
-        # for i in range(len(self.msg_arr)):
-        #     for handle in self.handlers:
-        #         if handle.is_match(val=self.msg_arr):
-
-            # msg = self.msg_arr[i]
-            # self.handlers
-            # print(self.msg_arr)
-        #
-        #     if (i == 0) and (msg == 'сегодня'):
-        #         self._today()
-        #
-        #     if i != 0 and msg == 'в':
-        #
-        #         if re.search('\d', self.msg_arr[i + 1]):
-        #             digit_time = self.msg_arr[i + 1]
-        #
-        #             if self.msg_arr[i + 2] in time_data['at']:
-        #
-        #                 day_of_time = self.msg_arr[i + 2]
-        #                 print(digit_time, day_of_time)
-        #
-        #     elif msg == 'через':
-        #         self._in()
 
 
-
-
-
-fuck = Reminder(msg='напомни мне сегодня в 3 час 37 минут и 17 секунд дня купить что то')
+fuck = Reminder(msg='напомни мне сегодня в 10 часов 25 минут 30 секунд вечера купить что то')
 # fuck = Reminder(msg='напомни мне через 3 часа купить что то')
 fuck.start()
 # fuck.set_msg_arr()
