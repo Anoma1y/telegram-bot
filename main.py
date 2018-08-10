@@ -388,15 +388,28 @@ class TodayHandler(Handler):
 class TomorrowHandler(Handler):
     def __init__(self):
         super().__init__()
-        self._days = 1
+        self._days = {
+            'завтра': 1,
+            'послезавтра': 2,
+            'послепослезавтра': 3,
+        }
+        self._match = 'завтра'
 
     @property
     def days(self):
         return self._days
 
+    @property
+    def match(self):
+        return self._match
+
+    @match.setter
+    def match(self, val):
+        self._match = val
+
     def handle(self, slice, current_time):
         today = datetime.datetime.now()
-        tomorrow = today + datetime.timedelta(days=self.days)
+        tomorrow = today + datetime.timedelta(days=self.days[self.match])
         tomorrow_date = tomorrow.date()
 
         if current_time is not None:
@@ -408,25 +421,14 @@ class TomorrowHandler(Handler):
         }
 
     def is_match(self, val):
-        return val[0].lower() == 'завтра'
+        if val[0].lower() in self.days:
+            self.match = val[0].lower()
 
+            if val[0].lower() == self.match:
+                return True
 
-class DayAfterTomorrowHandler(TomorrowHandler):
-    def __init__(self):
-        super().__init__()
-        self._days = 2
+        return False
 
-    def is_match(self, val):
-        return val[0].lower() == 'послезавтра'
-
-
-class AfterTheDayAfterTomorrowHandler(TomorrowHandler):
-    def __init__(self):
-        super().__init__()
-        self._days = 3
-
-    def is_match(self, val):
-        return val[0].lower() == 'послепослезавтра'
 
 
 
@@ -442,9 +444,7 @@ class Reminder:
             InHandler(),
             AtHandler(),
             TodayHandler(),
-            TomorrowHandler(),
-            DayAfterTomorrowHandler(),
-            AfterTheDayAfterTomorrowHandler()
+            TomorrowHandler()
         ]
 
     @property
