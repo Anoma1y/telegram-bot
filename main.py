@@ -95,7 +95,6 @@ remind1 = 'напомни мне в июле 2019 сделать таск'
 remind3 = 'напомни мне через 1 час встреча с кем то там'
 remind4 = 'напомни мне через 4 дня 2 часа 5 минут и 10 секунд пойти погулять'
 remind5 = 'напомни мне 14 августа 2018 в 10 часов сходить купить поесть'
-
 remind2 = 'напомни мне сегодня в 10 вечера купить что то'
 
 time_data = {
@@ -368,20 +367,14 @@ class InHandler(Handler):
     def is_match(self, val):
         return val[0].lower() == 'в'
 
-    def handle_times_of_day(self, current_time, msg):
-        split_time = msg[0].split(':')
-        print(split_time)
-        if re.search('часо?в?', msg[1]):  # msg[1] = <часов> ?
-
-            pass
-
     def handle_times_absolute(self, current_time, msg):
-        split_time = msg[0].split(':') # 1-24
+        split_time = msg[0].split(':')
 
         if len(split_time) != 0:
             hours = split_time[0]
             minutes = split_time[1] if len(split_time) == 2 else 0
             return self.handle_time(current_time, hours, minutes, 0)
+        
         else:
             return False
 
@@ -507,9 +500,12 @@ class Reminder:
         msg = re.sub('\s+', ' ', self.msg)
 
         if re.search(remind_word, msg.lower()):
+
             if re.search('^что\s', msg[len(remind_word):].strip()):
                 self.msg_arr = msg[(len(remind_word) + 5):].strip().split(' ')
+
             self.msg_arr = msg[len(remind_word):].strip().split(' ')
+
         else:
             self.msg_arr = ''
 
@@ -524,9 +520,9 @@ class Reminder:
 
                 if handle.is_match(val=self.msg_arr_slice):
                     slice = handle.handle(self.msg_arr_slice, self.time)
-
                     self.msg_arr_slice = slice['msg']
                     self.time = slice['time']
+
                 elif len(self.msg_arr_slice) == 0:
                     is_check = False
             sleep(1)
@@ -535,7 +531,7 @@ class Reminder:
         print('Done')
 
 
-reminder = Reminder(msg='напомни мне послезавтра в 8 часов 15 минут утра купить дилдак по скидке')
+reminder = Reminder(msg='напомни мне завтра в 7 часов 15 секунд утра купить дилдак по скидке')
 # reminder = Reminder(msg='напомни мне завтра в 11 часов 10 минут и 15 секунд вечера купить дилдак по скидке')
 reminder.start()
 
