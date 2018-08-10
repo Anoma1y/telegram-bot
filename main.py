@@ -291,7 +291,8 @@ class Handler:
     # @params msg_slice - массив сообщения
     # @params current_time - текущее время, созданное в классе Reminder
     # return - кортеж: новое значение времени (h - часы, m - минуты, s - секунды) и обрезанное сообщение
-    def parse_times_from_slice(self, msg_slice, current_time):
+    @staticmethod
+    def parse_times_from_slice(msg_slice, current_time):
         offset = 0
         time_arr = msg_slice[:]
         available_time_arr = []
@@ -299,6 +300,7 @@ class Handler:
         new_current_datetime = None
 
         for t in range(len(time_arr)):
+
             if re.search('\d\d?', time_arr[t]) and re.search('(часо?в?|минуты?|секунды?)', time_arr[t + 1]):
                 available_time_arr.append([time_arr[t], time_arr[t + 1]])
                 offset = offset + 2
@@ -311,16 +313,17 @@ class Handler:
                 offset = offset + 1
 
         if len(available_time_arr) != 0:
-            (hh, mm, ss) = self.parse_time(available_time_arr, times_of_day)
-            new_time = self.handle_time(hh, mm, ss)
-            new_current_datetime = self.set_time(current_time.date(), new_time)
+            (hh, mm, ss) = Handler.parse_time(available_time_arr, times_of_day)
+            new_time = Handler.handle_time(hh, mm, ss)
+            new_current_datetime = Handler.set_time(current_time.date(), new_time)
 
         return (
             new_current_datetime,
             msg_slice[offset:]
         )
 
-    def parse_absolute_times_from_slice(self, msg_slice, current_time):
+    @staticmethod
+    def parse_absolute_times_from_slice(msg_slice, current_time):
         offset = 1
         time_arr = msg_slice[0].split(':')
         times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
@@ -334,11 +337,11 @@ class Handler:
         if times_of_day is not None:
             hh = Handler.handle_set_time_times_of_day(times_of_day, hh)
 
-        mm = time_arr[1] if len(time_arr) == 2 else 0
+        mm = time_arr[1] if len(time_arr) >= 2 else 0
         ss = time_arr[2] if len(time_arr) == 3 else 0
 
-        new_time = self.handle_time(hh, mm, ss)
-        new_current_datetime = self.set_time(current_time.date(), new_time)
+        new_time = Handler.handle_time(hh, mm, ss)
+        new_current_datetime = Handler.set_time(current_time.date(), new_time)
 
         return (
             new_current_datetime,
@@ -374,7 +377,7 @@ class InHandler(Handler):
             hours = split_time[0]
             minutes = split_time[1] if len(split_time) == 2 else 0
             return self.handle_time(current_time, hours, minutes, 0)
-        
+
         else:
             return False
 
@@ -531,11 +534,9 @@ class Reminder:
         print('Done')
 
 
-reminder = Reminder(msg='напомни мне завтра в 7 часов 15 секунд утра купить дилдак по скидке')
-# reminder = Reminder(msg='напомни мне завтра в 11 часов 10 минут и 15 секунд вечера купить дилдак по скидке')
-reminder.start()
+reminder = Reminder(msg='напомни мне завтра в 5 часов 25 минут дня купить дилдак по скидке')
 
-# day = re.search('(\d+)(\s+)?(секунды?|минуты?|час|день|дней|дня|недел[иья]|месяца?|года?|лет)(\s+)?[и,]?(\s+)?', '1 час и 10 минут')
+reminder.start()
 
 "hello {name} today is {weekday}".format(
     name="john",
