@@ -282,6 +282,7 @@ class Handler:
         time_arr = msg_slice[:]
         available_time_arr = []
         times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
+        new_current_datetime = None
 
         for t in range(len(time_arr)):
             if re.search('\d\d?', time_arr[t]) and re.search('(часо?в?|минуты?|секунды?)', time_arr[t + 1]):
@@ -306,10 +307,19 @@ class Handler:
         )
 
     def parse_absolute_times_from_slice(self, msg_slice, current_time):
-        print('1')
+        offset = 0
+        time_arr = msg_slice[0].split(':')
+
+        hh = time_arr[0] if time_arr[0] in time_arr else 0
+        mm = time_arr[1] if len(time_arr) == 2 else 0
+        ss = time_arr[2] if len(time_arr) == 3 else 0
+
+        new_time = self.handle_time(hh, mm, ss)
+        new_current_datetime = self.set_time(current_time.date(), new_time)
+
         return (
-            current_time,
-            msg_slice
+            new_current_datetime,
+            msg_slice[offset:]
         )
 
 
@@ -430,8 +440,6 @@ class TomorrowHandler(Handler):
         return False
 
 
-
-
 class Reminder:
 
     def __init__(self, msg):
@@ -475,6 +483,7 @@ class Reminder:
     def msg_arr_slice(self, value):
         self._msg_arr_slice = value
 
+    # Метод поиска команды для запуска парсера
     def parse_command(self):
         remind_word = 'напомни мне'
         msg = re.sub('\s+', ' ', self.msg)
@@ -508,7 +517,7 @@ class Reminder:
         print('Done')
 
 
-reminder = Reminder(msg='напомни мне завтра в 11 часов 33 минут 21 секунды вечера купить дилдак по скидке')
+reminder = Reminder(msg='напомни мне завтра в 23:44 купить дилдак по скидке')
 reminder.start()
 
 # day = re.search('(\d+)(\s+)?(секунды?|минуты?|час|день|дней|дня|недел[иья]|месяца?|года?|лет)(\s+)?[и,]?(\s+)?', '1 час и 10 минут')
