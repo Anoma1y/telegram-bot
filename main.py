@@ -226,13 +226,32 @@ class Handler:
     # return - новое значение времени datetime
     @staticmethod
     def set_time(d, t):
+        return datetime.datetime.combine(d, t)
+
+    # Метод записывающий результат выполнения
+    # @params new_time - новое время, в формате datetime.datetime
+    # @params msg - новый, обрезанный массив
+    # @params err - ошибка
+    # return - кортеж значений
+    @staticmethod
+    def set_result(new_time=None, msg='', err=''):
+        return (
+            new_time,
+            msg,
+            err
+        )
+
+    # Метод для проверки времени
+    # @params new_time - проверяемое время
+    # return - True, иначе если ошибка, вернет объект с указанием ошибки
+    @staticmethod
+    def check_time(new_time):  # todo сделать проверку времени больше, чем текущее на 5-15 минут
         c_t = datetime.datetime.now()
-        td = datetime.datetime.combine(d, t)
 
-        if c_t > td:
-            return False
+        if c_t > new_time:
+            return 'Указаное время меньше текущего'
 
-        return td
+        return True
 
     # Метод которые возвщатает время в зависимости от модификатора времени (утром, днем, вечером, ночью)
     # @params times_of_day - модификатор времени (по дефолту равен None)
@@ -291,14 +310,17 @@ class Handler:
     # @params msg_slice - массив сообщения
     # @params current_time - текущее время, созданное в классе Reminder
     # return - кортеж: новое значение времени (h - часы, m - минуты, s - секунды) и обрезанное сообщение
-    def parse_times_from_slice(self, msg_slice, current_time):
+    @staticmethod
+    def parse_times_from_slice(msg_slice, current_time):
         offset = 0
         time_arr = msg_slice[:]
         available_time_arr = []
         times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
         new_current_datetime = None
+        err = ''
 
         for t in range(len(time_arr)):
+
             if re.search('\d\d?', time_arr[t]) and re.search('(часо?в?|минуты?|секунды?)', time_arr[t + 1]):
                 available_time_arr.append([time_arr[t], time_arr[t + 1]])
                 offset = offset + 2
@@ -311,16 +333,22 @@ class Handler:
                 offset = offset + 1
 
         if len(available_time_arr) != 0:
-            (hh, mm, ss) = self.parse_time(available_time_arr, times_of_day)
-            new_time = self.handle_time(hh, mm, ss)
-            new_current_datetime = self.set_time(current_time.date(), new_time)
+            (hh, mm, ss) = Handler.parse_time(available_time_arr, times_of_day)
+            new_time = Handler.handle_time(hh, mm, ss)
+            new_current_datetime = Handler.set_time(current_time.date(), new_time)
+            check_time = Handler.check_time(new_current_datetime)
+
+            if check_time is not True:
+                (err) = check_time  # вывод ошибки если указанное время меньше текущего
 
         return (
             new_current_datetime,
-            msg_slice[offset:]
+            msg_slice[offset:],
+            err
         )
 
-    def parse_absolute_times_from_slice(self, msg_slice, current_time):
+    @staticmethod
+    def parse_absolute_times_from_slice(msg_slice, current_time):
         offset = 1
         time_arr = msg_slice[0].split(':')
         times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
@@ -334,35 +362,41 @@ class Handler:
         if times_of_day is not None:
             hh = Handler.handle_set_time_times_of_day(times_of_day, hh)
 
-        mm = time_arr[1] if len(time_arr) == 2 else 0
+        mm = time_arr[1] if len(time_arr) >= 2 else 0
         ss = time_arr[2] if len(time_arr) == 3 else 0
 
-        new_time = self.handle_time(hh, mm, ss)
-        new_current_datetime = self.set_time(current_time.date(), new_time)
+        new_time = Handler.handle_time(hh, mm, ss)
+        new_current_datetime = Handler.set_time(current_time.date(), new_time)
+
+        # c_t = datetime.datetime.now()
+        # if c_t > td:
+        #     return False
 
         return (
             new_current_datetime,
-            msg_slice[offset:]
+            msg_slice[offset:],
+            ''
         )
 
 
-class InHandler(Handler):
+class AtHandler(Handler):
     def handle(self, msg_slice, current_time):
         msg_slice = msg_slice[1:]
 
         if re.search('\d\d?', msg_slice[0]) and re.search('(часо?в?|минуты?|секунды?)', msg_slice[1]):
-            (new_current_time, new_msg_slice) = self.parse_times_from_slice(msg_slice, current_time)
+            (new_current_time, new_msg_slice, err) = self.parse_times_from_slice(msg_slice, current_time)
 
         elif re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0]):
-            (new_current_time, new_msg_slice) = self.parse_absolute_times_from_slice(msg_slice, current_time)
+            (new_current_time, new_msg_slice, err) = self.parse_absolute_times_from_slice(msg_slice, current_time)
 
         else:
             return False
 
-        return {
-            'time': new_current_time,
-            'msg': new_msg_slice
-        }
+        return (
+            new_current_time,
+            new_msg_slice,
+            err
+        )
 
     def is_match(self, val):
         return val[0].lower() == 'в'
@@ -374,12 +408,12 @@ class InHandler(Handler):
             hours = split_time[0]
             minutes = split_time[1] if len(split_time) == 2 else 0
             return self.handle_time(current_time, hours, minutes, 0)
-        
+
         else:
             return False
 
 
-class AtHandler(Handler):
+class InHandler(Handler):
     def handle(self, slice, current_time):
         print('is_match: через')
 
@@ -395,12 +429,13 @@ class TodayHandler(Handler):
         today_date = today.date()
 
         if current_time is not None:
-            today = self.set_time(today_date, current_time.time())
+            today = Handler.set_time(today_date, current_time.time())
 
-        return {
-            'time': today,
-            'msg': slice[1:]
-        }
+        return (
+            today,
+            slice[1:],
+            ''
+        )
 
     def is_match(self, val):
         return val[0].lower() == 'сегодня'
@@ -434,12 +469,13 @@ class TomorrowHandler(Handler):
         tomorrow_date = tomorrow.date()
 
         if current_time is not None:
-            tomorrow = self.set_time(tomorrow_date, current_time.time())
+            tomorrow = Handler.set_time(tomorrow_date, current_time.time())
 
-        return {
-            'time': tomorrow,
-            'msg': slice[1:]
-        }
+        return (
+            tomorrow,
+            slice[1:],
+            ''
+        )
 
     def is_match(self, val):
         if val[0].lower() in self.days:
@@ -519,23 +555,29 @@ class Reminder:
             for handle in self.handlers:
 
                 if handle.is_match(val=self.msg_arr_slice):
-                    slice = handle.handle(self.msg_arr_slice, self.time)
-                    self.msg_arr_slice = slice['msg']
-                    self.time = slice['time']
+
+                    ( new_current_time, new_msg_slice, err ) = handle.handle(self.msg_arr_slice, self.time)
+
+                    if len(err) != 0:
+                        print(err)
+                        is_check = False
+
+                    self.msg_arr_slice = new_msg_slice
+                    self.time = new_current_time
 
                 elif len(self.msg_arr_slice) == 0:
                     is_check = False
+
             sleep(1)
             print('Reminder time: ', self.time)
 
         print('Done')
 
 
-reminder = Reminder(msg='напомни мне завтра в 7 часов 15 секунд утра купить дилдак по скидке')
-# reminder = Reminder(msg='напомни мне завтра в 11 часов 10 минут и 15 секунд вечера купить дилдак по скидке')
-reminder.start()
+# reminder = Reminder(msg='напомни мне завтра в 5 часов 25 минут дня купить дилдак по скидке')
+reminder = Reminder(msg='напомни мне сегодня в 5 часов 3 минуты 17 секунд ночи купить дилдак по скидке')
 
-# day = re.search('(\d+)(\s+)?(секунды?|минуты?|час|день|дней|дня|недел[иья]|месяца?|года?|лет)(\s+)?[и,]?(\s+)?', '1 час и 10 минут')
+reminder.start()
 
 "hello {name} today is {weekday}".format(
     name="john",
@@ -543,54 +585,54 @@ reminder.start()
 )
 
 
-def text_message(bot, update):
-    response = 'Получил Ваше сообщение: ' + update.message.text
-    bot.send_message(chat_id=update.message.chat_id, text=response)
-
-
-def set_notification(bot, update):
-    ins = db.prepare("INSERT INTO reminder (user_id, creator_id, message, notify_at) VALUES (24787878232, 545777888833, 'Тестовый с питона', 'now()')")
-
-    bot.send_message(chat_id=update.message.chat_id, text='Добавлено')
-
-
-updater = Updater(token=CONFIG.TOKEN)
-dispatcher = updater.dispatcher
-
-
-@run_async
-def starter(bot, update):
-    print('Hui start')
-    while True:
-        pass
-        get_emp_with_salary_lt = db.query("SELECT message FROM reminder WHERE notify_at > now()")
-
-        print(get_emp_with_salary_lt)
-        sleep(2)
-
-
-def main():
-    try:
-        text_message_handler = MessageHandler(Filters.text, text_message)
-        start_command_handler = CommandHandler('start', starter)
-        tags_command_handler = CommandHandler('tags', send_tags)
-        image_command_handler = CommandHandler('image', send_album)
-        help_command_handler = CommandHandler('help', get_help_command_list)
-        set_command_handler = CommandHandler('set', set_notification)
-
-        dispatcher.add_handler(start_command_handler)
-        dispatcher.add_handler(tags_command_handler)
-        dispatcher.add_handler(image_command_handler)
-        dispatcher.add_handler(help_command_handler)
-        dispatcher.add_handler(set_command_handler)
-        dispatcher.add_handler(text_message_handler)
-        # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-        updater.start_polling(clean=True)
-
-        updater.idle()
-    except Exception as e:
-        print("type error: " + str(e))
+# def text_message(bot, update):
+#     response = 'Получил Ваше сообщение: ' + update.message.text
+#     bot.send_message(chat_id=update.message.chat_id, text=response)
+#
+#
+# def set_notification(bot, update):
+#     ins = db.prepare("INSERT INTO reminder (user_id, creator_id, message, notify_at) VALUES (24787878232, 545777888833, 'Тестовый с питона', 'now()')")
+#
+#     bot.send_message(chat_id=update.message.chat_id, text='Добавлено')
+#
+#
+# updater = Updater(token=CONFIG.TOKEN)
+# dispatcher = updater.dispatcher
+#
+#
+# @run_async
+# def starter(bot, update):
+#     print('Hui start')
+#     while True:
+#         pass
+#         get_emp_with_salary_lt = db.query("SELECT message FROM reminder WHERE notify_at > now()")
+#
+#         print(get_emp_with_salary_lt)
+#         sleep(2)
+#
+#
+# def main():
+#     try:
+#         text_message_handler = MessageHandler(Filters.text, text_message)
+#         start_command_handler = CommandHandler('start', starter)
+#         tags_command_handler = CommandHandler('tags', send_tags)
+#         image_command_handler = CommandHandler('image', send_album)
+#         help_command_handler = CommandHandler('help', get_help_command_list)
+#         set_command_handler = CommandHandler('set', set_notification)
+#
+#         dispatcher.add_handler(start_command_handler)
+#         dispatcher.add_handler(tags_command_handler)
+#         dispatcher.add_handler(image_command_handler)
+#         dispatcher.add_handler(help_command_handler)
+#         dispatcher.add_handler(set_command_handler)
+#         dispatcher.add_handler(text_message_handler)
+#         # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#
+#         updater.start_polling(clean=True)
+#
+#         updater.idle()
+#     except Exception as e:
+#         print("type error: " + str(e))
 
 #
 # if __name__ == '__main__':

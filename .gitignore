@@ -184,6 +184,7 @@ venv.bak/
 
 ### Python Patch ###
 .venv/
+/telegram
 
 ### Python.VirtualEnv Stack ###
 # Virtualenv
