@@ -576,7 +576,6 @@ class Reminder:
 
 # reminder = Reminder(msg='напомни мне завтра в 5 часов 25 минут дня купить дилдак по скидке')
 reminder = Reminder(msg='напомни мне сегодня в 5 часов 3 минуты 17 секунд ночи купить дилдак по скидке')
-
 reminder.start()
 
 "hello {name} today is {weekday}".format(
