@@ -98,7 +98,7 @@ remind5 = 'напомни мне 14 августа 2018 в 10 часов схо�
 remind2 = 'напомни мне сегодня в 10 вечера купить что то'
 
 time_data = {
-    'in': {
+    'at': {
         'утро': {
             'шесть': 6,
             'семь': 7,
@@ -113,7 +113,7 @@ time_data = {
             '9': 9,
             '10': 10,
             '11': 11,
-            '12': 12
+            '12': 12,
         },
         'день': {
             'час': 13,
@@ -127,7 +127,13 @@ time_data = {
             '3': 15,
             '4': 16,
             '5': 17,
-            '6': 18
+            '6': 18,
+            '13': 13,
+            '14': 14,
+            '15': 15,
+            '16': 16,
+            '17': 17,
+            '18': 18
         },
         'вечер': {
             'шесть': 18,
@@ -143,7 +149,14 @@ time_data = {
             '9': 21,
             '10': 22,
             '11': 23,
-            '12': 0
+            '12': 0,
+            '18': 18,
+            '19': 19,
+            '20': 20,
+            '21': 21,
+            '22': 22,
+            '23': 23,
+            '24': 0
         },
         'ночь': {
             'двенадцать': 0,
@@ -260,20 +273,31 @@ class Handler:
     @staticmethod
     def handle_set_time_times_of_day(times_of_day, hours):
         h = hours
+        err = ''
 
-        if re.search('(вечера?о?м?)', times_of_day):
-            h = time_data['in']['вечер'][hours]
+        try:
+            if re.search('(вечера?о?м?)', times_of_day):
+                h = time_data['at']['вечер'][hours]
 
-        elif re.search('(утра?о?м?)', times_of_day):
-            h = time_data['in']['утро'][hours]
+            elif re.search('(утра?о?м?)', times_of_day):
+                h = time_data['at']['утро'][hours]
 
-        elif re.search('(ночи?ь?ю?)', times_of_day):
-            h = time_data['in']['ночь'][hours]
+            elif re.search('(ночи?ь?ю?)', times_of_day):
+                h = time_data['at']['ночь'][hours]
 
-        elif re.search('(дня)', times_of_day):
-            h = time_data['in']['день'][hours]
+            elif re.search('(дня)', times_of_day):
+                h = time_data['at']['день'][hours]
 
-        return h
+            return (
+                h,
+                err
+            )
+
+        except Exception:
+            return (
+                0,
+                err
+            )
 
     # Статический метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
     # @params available_time_arr - массив массивов времени [[\d\, \str\]]
@@ -284,6 +308,7 @@ class Handler:
         h = 0
         m = 0
         s = 0
+        err = ''
 
         for t in available_time_arr:
 
@@ -292,7 +317,7 @@ class Handler:
                     h = t[0]
 
                 else:
-                    h = Handler.handle_set_time_times_of_day(times_of_day, t[0])
+                    (h, err) = Handler.handle_set_time_times_of_day(times_of_day, t[0])
 
             elif re.search('минуты?', t[1]):
                 m = t[0]
@@ -303,7 +328,8 @@ class Handler:
         return (
             h,
             m,
-            s
+            s,
+            err
         )
 
     # Метод для парсинга времени в текстовом формате (1 час, 5 минут и тп)
@@ -333,7 +359,8 @@ class Handler:
                 offset = offset + 1
 
         if len(available_time_arr) != 0:
-            (hh, mm, ss) = Handler.parse_time(available_time_arr, times_of_day)
+            (hh, mm, ss, err) = Handler.parse_time(available_time_arr, times_of_day)
+
             new_time = Handler.handle_time(hh, mm, ss)
             new_current_datetime = Handler.set_time(current_time.date(), new_time)
             check_time = Handler.check_time(new_current_datetime)
@@ -352,6 +379,7 @@ class Handler:
         offset = 1
         time_arr = msg_slice[0].split(':')
         times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
+        err = ''
 
         if re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', msg_slice[1]):
             times_of_day = msg_slice[1]
@@ -360,22 +388,22 @@ class Handler:
         hh = time_arr[0] if time_arr[0] in time_arr else 0
 
         if times_of_day is not None:
-            hh = Handler.handle_set_time_times_of_day(times_of_day, hh)
+            (hh, err) = Handler.handle_set_time_times_of_day(times_of_day, hh)
 
         mm = time_arr[1] if len(time_arr) >= 2 else 0
         ss = time_arr[2] if len(time_arr) == 3 else 0
 
         new_time = Handler.handle_time(hh, mm, ss)
         new_current_datetime = Handler.set_time(current_time.date(), new_time)
+        check_time = Handler.check_time(new_current_datetime)
 
-        # c_t = datetime.datetime.now()
-        # if c_t > td:
-        #     return False
+        if check_time is not True:
+            (err) = check_time  # вывод ошибки если указанное время меньше текущего
 
         return (
             new_current_datetime,
             msg_slice[offset:],
-            ''
+            err
         )
 
 
@@ -575,7 +603,7 @@ class Reminder:
 
 
 # reminder = Reminder(msg='напомни мне завтра в 5 часов 25 минут дня купить дилдак по скидке')
-reminder = Reminder(msg='напомни мне сегодня в 5 часов 3 минуты 17 секунд ночи купить дилдак по скидке')
+reminder = Reminder(msg='напомни мне завтра в 3 дня купить дилдак по скидке')
 reminder.start()
 
 "hello {name} today is {weekday}".format(
