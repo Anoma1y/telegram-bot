@@ -4,13 +4,13 @@ import telegram
 import re
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
 import logging
-import postgresql
+# import postgresql
 import yandere
 import config as CONFIG
 import datetime
 from time import *
 
-db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
+# db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 
 unix_time = {
     'minute': 60,
@@ -241,32 +241,40 @@ class Handler:
             s
         )
 
+    def parse_times_from_slice(self, msg_slice, current_time):
+        offset = 0
+        time_arr = msg_slice[:]
+        available_time_arr = []
+        times_of_day = None
+
+        for t in range(len(time_arr)):
+            if re.search('\d\d?', time_arr[t]) and re.search('(часо?в?|минуты?|секунды?)', time_arr[t + 1]):
+                available_time_arr.append([time_arr[t], time_arr[t + 1]])
+                offset = offset + 2
+
+            elif re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', time_arr[t]):
+                times_of_day = time_arr[t]
+                offset = offset + 1
+
+            elif time_arr[t] == 'и':
+                offset = offset + 1
+
+        if len(available_time_arr) != 0:
+            (hh, mm, ss) = self.parse_time(available_time_arr, times_of_day)
+            current_time = self.handle_time(current_time, hh, mm, ss)
+
+        return (
+            current_time,
+            msg_slice[offset:]
+        )
+
 
 class InHandler(Handler):
     def handle(self, msg_slice, current_time):
         msg_slice = msg_slice[1:]
-        offset = 0
 
         if re.search('\d\d?', msg_slice[0]) and re.search('(часо?в?|минуты?|секунды?)', msg_slice[1]):
-            time_arr = msg_slice[:]
-            available_time_arr = []
-            times_of_day = None
-
-            for t in range(len(time_arr)):
-                if re.search('\d\d?', time_arr[t]) and re.search('(часо?в?|минуты?|секунды?)', time_arr[t + 1]):
-                    available_time_arr.append([time_arr[t], time_arr[t + 1]])
-                    offset = offset + 2
-
-                elif re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', time_arr[t]):
-                    times_of_day = time_arr[t]
-                    offset = offset + 1
-
-                elif time_arr[t] == 'и':
-                    offset = offset + 1
-
-            if len(available_time_arr) != 0:
-                (hh, mm, ss) = self.parse_time(available_time_arr, times_of_day)
-                current_time = self.handle_time(current_time, hh, mm, ss)
+            (new_current_time, new_msg_slice) = self.parse_times_from_slice(msg_slice, current_time)
 
         # if (re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0])) \
         #         and (re.search('(вечера|утра|ночи|дня)', msg_slice[1]) or (re.search('часо?в?', msg_slice[1]) and re.search('(вечера|утра|ночи|дня)', msg_slice[2]))):
@@ -280,8 +288,8 @@ class InHandler(Handler):
             return False
 
         return {
-            'time': current_time,
-            'msg': msg_slice[offset:]
+            'time': new_current_time,
+            'msg': new_msg_slice
         }
 
     def is_match(self, val):
@@ -330,20 +338,44 @@ class TodayHandler(Handler):
 class Reminder:
 
     def __init__(self, msg):
-        self.msg = msg
-        self.msg_arr = []
-        self.msg_arr_slice = []
-        self.time = None
-        self.previous = ''
-        self.date = {
-            'is_today': False,
-            'is_tommorow': False
-        }
+        self._msg = msg
+        self._msg_arr = []
+        self._msg_arr_slice = []
+        self._time = None
+
         self.handlers = [
             InHandler(),
             AtHandler(),
             TodayHandler()
         ]
+
+    @property
+    def msg(self):
+        return self._msg
+
+    @property
+    def msg_arr(self):
+        return self._msg_arr
+
+    @property
+    def time(self):
+        return self._time
+
+    @property
+    def msg_arr_slice(self):
+        return self._msg_arr_slice
+
+    @msg_arr.setter
+    def msg_arr(self, value):
+        self._msg_arr = value
+
+    @time.setter
+    def time(self, value):
+        self._time = value
+
+    @msg_arr_slice.setter
+    def msg_arr_slice(self, value):
+        self._msg_arr_slice = value
 
     def parse_command(self):
         remind_word = 'напомни мне'
@@ -351,26 +383,14 @@ class Reminder:
 
         if re.search(remind_word, msg.lower()):
             if re.search('^что\s', msg[len(remind_word):].strip()):
-                self.set_msg_arr(msg[(len(remind_word) + 5):].strip().split(' '))
-            self.set_msg_arr(msg[len(remind_word):].strip().split(' '))
+                self.msg_arr = msg[(len(remind_word) + 5):].strip().split(' ')
+            self.msg_arr = msg[len(remind_word):].strip().split(' ')
         else:
-            self.set_msg_arr('')
-
-    def set_msg_arr(self, msg):
-        self.msg_arr = msg
-
-    def set_time(self, time):
-        self.time = time
-
-    def set_previous(self, val):
-        self.previous = val
-
-    def set_msg_arr_slice(self, msg):
-        self.msg_arr_slice = msg
+            self.msg_arr = ''
 
     def start(self):
         self.parse_command()
-        self.set_msg_arr_slice(self.msg_arr)
+        self.msg_arr_slice = self.msg_arr
         is_check = True
 
         while is_check:
@@ -380,8 +400,8 @@ class Reminder:
                 if handle.is_match(val=self.msg_arr_slice):
                     slice = handle.handle(self.msg_arr_slice, self.time)
 
-                    self.set_msg_arr_slice(slice['msg'])
-                    self.set_time(slice['time'])
+                    self.msg_arr_slice = slice['msg']
+                    self.time = slice['time']
 
             sleep(1)
             print(self.time)
@@ -415,7 +435,7 @@ class Reminder:
 
 
 
-fuck = Reminder(msg='напомни мне сегодня в 3 час 17 секунд купить что то')
+fuck = Reminder(msg='напомни мне сегодня в 3 час 37 минут и 17 секунд дня купить что то')
 # fuck = Reminder(msg='напомни мне через 3 часа купить что то')
 fuck.start()
 # fuck.set_msg_arr()
