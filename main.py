@@ -221,6 +221,10 @@ class Handler:
 
         return d
 
+    # Метод для добавления нового времени
+    # @params d - дата в раскрытом формате (d.date())
+    # @params t - время в раскрытом формате (t.time())
+    # return - новое значение времени datetime
     @staticmethod
     def set_time(d, t):
         c_t = datetime.datetime.now()
@@ -294,8 +298,6 @@ class Handler:
         if len(available_time_arr) != 0:
             (hh, mm, ss) = self.parse_time(available_time_arr, times_of_day)
             new_time = self.handle_time(hh, mm, ss)
-            # print(current_time.date())
-            # new_current_datetime = current_time
             new_current_datetime = self.set_time(current_time.date(), new_time)
 
         return (
@@ -368,15 +370,64 @@ class AtHandler(Handler):
 
 class TodayHandler(Handler):
     def handle(self, slice, current_time):
-        c_d = datetime.datetime.now()
+        today = datetime.datetime.now()
+        today_date = today.date()
+
+        if current_time is not None:
+            today = self.set_time(today_date, current_time.time())
 
         return {
-            'time': c_d,
+            'time': today,
             'msg': slice[1:]
         }
 
     def is_match(self, val):
         return val[0].lower() == 'сегодня'
+
+
+class TomorrowHandler(Handler):
+    def __init__(self):
+        super().__init__()
+        self._days = 1
+
+    @property
+    def days(self):
+        return self._days
+
+    def handle(self, slice, current_time):
+        today = datetime.datetime.now()
+        tomorrow = today + datetime.timedelta(days=self.days)
+        tomorrow_date = tomorrow.date()
+
+        if current_time is not None:
+            tomorrow = self.set_time(tomorrow_date, current_time.time())
+
+        return {
+            'time': tomorrow,
+            'msg': slice[1:]
+        }
+
+    def is_match(self, val):
+        return val[0].lower() == 'завтра'
+
+
+class DayAfterTomorrowHandler(TomorrowHandler):
+    def __init__(self):
+        super().__init__()
+        self._days = 2
+
+    def is_match(self, val):
+        return val[0].lower() == 'послезавтра'
+
+
+class AfterTheDayAfterTomorrowHandler(TomorrowHandler):
+    def __init__(self):
+        super().__init__()
+        self._days = 3
+
+    def is_match(self, val):
+        return val[0].lower() == 'послепослезавтра'
+
 
 
 class Reminder:
@@ -390,7 +441,10 @@ class Reminder:
         self.handlers = [
             InHandler(),
             AtHandler(),
-            TodayHandler()
+            TodayHandler(),
+            TomorrowHandler(),
+            DayAfterTomorrowHandler(),
+            AfterTheDayAfterTomorrowHandler()
         ]
 
     @property
@@ -446,18 +500,16 @@ class Reminder:
 
                     self.msg_arr_slice = slice['msg']
                     self.time = slice['time']
-
+                elif len(self.msg_arr_slice) == 0:
+                    is_check = False
             sleep(1)
             print('Reminder time: ', self.time)
 
         print('Done')
 
 
-fuck = Reminder(msg='напомни мне сегодня в 10 часов 25 минут 30 секунд вечера купить что то')
-# fuck = Reminder(msg='напомни мне через 3 часа купить что то')
-fuck.start()
-# fuck.set_msg_arr()
-# fuck.print_msg()
+reminder = Reminder(msg='напомни мне завтра в 11 часов 33 минут 21 секунды вечера купить дилдак по скидке')
+reminder.start()
 
 # day = re.search('(\d+)(\s+)?(секунды?|минуты?|час|день|дней|дня|недел[иья]|месяца?|года?|лет)(\s+)?[и,]?(\s+)?', '1 час и 10 минут')
 
@@ -465,8 +517,6 @@ fuck.start()
     name="john",
     weekday="sunday"
 )
-
-# print(day)
 
 
 def text_message(bot, update):
