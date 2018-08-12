@@ -298,23 +298,30 @@ class Handler:
                 0,
                 err
             )
+
     # Методя для добавления Даты к текущей дате
-    # @params current_date - текущая дата в формате datetime.datetime
-    # @params added_date - сколько нужен добавить дат в формате datetime.datetime
+    # @params current_dt - текущая дата в формате datetime.datetime
+    # @params added_date - сколько нужно добавить дат в формате datetime.datetime
     # return - новое значение даты (d - день, m - месяц, y - год)
     @staticmethod
-    def addition_date(current_date, added_date):
-        pass
+    def addition_date(current_dt, days):
+        return (
+            current_dt + datetime.timedelta(days=days),
+            ''
+        )
 
     # Методя для добавления времени к текущему времени
-    # @params current_time - текущее время в формате datetime.datetime
-    # @params added_time - сколько нужен добавить времени в формате datetime.datetime
+    # @params current_dt - текущее время в формате datetime.datetime
+    # @params seconds - сколько нужно добавить времени в формате datetime.datetime
     # return - новое значение времени (h - часы, m - минуты, s - секунды)
     @staticmethod
-    def addition_time(current_time, added_time):
-        pass
+    def addition_time(current_dt, seconds):
+        return (
+            current_dt + datetime.timedelta(seconds=seconds),
+            ''
+        )
 
-    # Статический метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
+    # Метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
     # @params available_time_arr - массив массивов времени [[\d\, \str\]]
     # @params times_of_day - модификатор времени (по дефолту равен None)
     # return - новое значение времени (h - часы, m - минуты, s - секунды)
@@ -344,6 +351,85 @@ class Handler:
             h,
             m,
             s,
+            err
+        )
+
+    @staticmethod
+    def calculate_day(calendar_day_type, value):
+        day = 1
+
+        if calendar_day_type == 'year':
+            day = int(value) * 365
+
+        elif calendar_day_type == 'month':
+            day = int(value) * 30
+
+        elif calendar_day_type == 'week':
+            day = int(value) * 7
+
+        elif calendar_day_type == 'day':
+            day = int(value) * 1
+
+        return day
+
+    # Метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
+    # @params available_date_arr - массив массивов времени [[\d\, \str\]]
+    # return - новое значение даты (dd - дни, mm - месяцы, yy - годы)
+    @staticmethod
+    def parse_date(current_time, available_date_arr):
+        days = 0
+        err = ''
+
+        for t in available_date_arr:
+            if re.search('(года?|лет)', t[1]):
+                days = days + Handler.calculate_day('year', t[0])
+
+            elif re.search('(месяцев|месяца?)', t[1]):
+                days = days + Handler.calculate_day('month', t[0])
+
+            elif re.search('(недел[яиь])', t[1]):
+                days = days + Handler.calculate_day('week', t[0])
+
+            elif re.search('(дня|дней|день)', t[1]):
+                days = days + Handler.calculate_day('day', t[0])
+
+        (new_dt, err) = Handler.addition_date(current_time, days)
+
+        return (
+            new_dt,
+            err
+        )
+
+    @staticmethod
+    def parse_dates_from_slice(msg_slice, current_time):
+        offset = 0
+        time_arr = msg_slice[:]
+        available_date_arr = []
+        new_current_datetime = None
+        err = ''
+
+        for t in range(len(time_arr)):
+            if re.search('\d\d?', time_arr[t]) and re.search('(года?|лет|дня|дней|день|недел[яиь]|месяцев|месяца?)', time_arr[t + 1]):
+                available_date_arr.append([time_arr[t], time_arr[t + 1]])
+                offset = offset + 2
+
+            elif time_arr[t] == 'и':
+                offset = offset + 1
+
+        if len(available_date_arr) != 0:
+            (new_dt, err) = Handler.parse_date(current_time, available_date_arr)
+
+            # new_time = Handler.handle_time(hh, mm, ss)
+            # new_current_datetime = Handler.set_time(current_time.date(), new_time)
+            # check_time = Handler.check_time(new_current_datetime)
+
+            # if check_time is not True:
+            #     (err) = check_time  # вывод ошибки если указанное время меньше текущего
+        print(new_dt)
+
+        return (
+            new_current_datetime,
+            msg_slice[offset:],
             err
         )
 
@@ -460,8 +546,11 @@ class InHandler(Handler):
     def handle(self, msg_slice, current_time):
         msg_slice = msg_slice[1:]
 
+        if current_time is None:
+            current_time = datetime.datetime.now()
+
         if re.search('\d\d?', msg_slice[0]) and re.search('(года?|лет|дня|дней|день|недел[яиь]|месяцев|месяца?)', msg_slice[1]):
-            print('hui')
+            (new_current_time, new_msg_slice, err) = self.parse_dates_from_slice(msg_slice, current_time)
 
         # if re.search('\d\d?', msg_slice[0]) and re.search('(часо?в?|минуты?|секунды?)', msg_slice[1]):
         #     (new_current_time, new_msg_slice, err) = self.parse_times_from_slice(msg_slice, current_time)
