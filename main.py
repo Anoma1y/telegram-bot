@@ -298,6 +298,21 @@ class Handler:
                 0,
                 err
             )
+    # Методя для добавления Даты к текущей дате
+    # @params current_date - текущая дата в формате datetime.datetime
+    # @params added_date - сколько нужен добавить дат в формате datetime.datetime
+    # return - новое значение даты (d - день, m - месяц, y - год)
+    @staticmethod
+    def addition_date(current_date, added_date):
+        pass
+
+    # Методя для добавления времени к текущему времени
+    # @params current_time - текущее время в формате datetime.datetime
+    # @params added_time - сколько нужен добавить времени в формате datetime.datetime
+    # return - новое значение времени (h - часы, m - минуты, s - секунды)
+    @staticmethod
+    def addition_time(current_time, added_time):
+        pass
 
     # Статический метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
     # @params available_time_arr - массив массивов времени [[\d\, \str\]]
@@ -442,10 +457,26 @@ class AtHandler(Handler):
 
 
 class InHandler(Handler):
-    def handle(self, slice, current_time):
-        print('is_match: через')
+    def handle(self, msg_slice, current_time):
+        msg_slice = msg_slice[1:]
 
-        pass
+        if re.search('\d\d?', msg_slice[0]) and re.search('(года?|лет|дня|дней|день|недел[яиь]|месяцев|месяца?)', msg_slice[1]):
+            print('hui')
+
+        # if re.search('\d\d?', msg_slice[0]) and re.search('(часо?в?|минуты?|секунды?)', msg_slice[1]):
+        #     (new_current_time, new_msg_slice, err) = self.parse_times_from_slice(msg_slice, current_time)
+        #
+        # elif re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0]):
+        #     (new_current_time, new_msg_slice, err) = self.parse_absolute_times_from_slice(msg_slice, current_time)
+        #
+        # else:
+        #     return False
+
+        return (
+            current_time,
+            msg_slice,
+            ''
+        )
 
     def is_match(self, val):
         return val[0].lower() == 'через'
@@ -602,8 +633,8 @@ class Reminder:
         print('Done')
 
 
-# reminder = Reminder(msg='напомни мне завтра в 5 часов 25 минут дня купить дилдак по скидке')
-reminder = Reminder(msg='напомни мне завтра в 3 дня купить дилдак по скидке')
+# reminder = Reminder(msg='напомни мне завтра в 5 часов 25 минут дня пойти на встречу с пидорасами')
+reminder = Reminder(msg='напомни мне через 1 месяца 3 недели 5 дней 5 часов 44 минуты 20 секунд купить дилдак по скидке')
 reminder.start()
 
 "hello {name} today is {weekday}".format(
