@@ -266,15 +266,190 @@ class Handler:
 
         return True
 
-    # Метод которые возвщатает время в зависимости от модификатора времени (утром, днем, вечером, ночью)
-    # @params times_of_day - модификатор времени (по дефолту равен None)
-    # @params hours - часы
+    # Методя для добавления Даты к текущей дате
+    # @params current_dt - текущая дата в формате datetime.datetime
+    # @params added_date - сколько нужно добавить дат в формате datetime.datetime
+    # return - новое значение даты (d - день, m - месяц, y - год)
+    @staticmethod
+    def addition_date(current_dt, days):
+        err = ''
+        if days < 0:
+            err = 'Ошибка указания времени'
+
+        return (
+            current_dt + datetime.timedelta(days=days),
+            err
+        )
+
+    # Методя для добавления времени к текущему времени
+    # @params current_dt - текущее время в формате datetime.datetime
+    # @params seconds - сколько нужно добавить времени в формате datetime.datetime
     # return - новое значение времени (h - часы, m - минуты, s - секунды)
     @staticmethod
+    def addition_time(current_dt, seconds):
+        err = ''
+        if seconds < 0:
+            err = 'Ошибка указания времени'
+
+        return (
+            current_dt + datetime.timedelta(seconds=seconds),
+            err
+        )
+
+    @staticmethod
+    def calculate_day(calendar_day_type, value):
+        days = 1
+
+        if calendar_day_type == 'year':
+            days = int(value) * 365
+
+        elif calendar_day_type == 'month':
+            days = int(value) * 30
+
+        elif calendar_day_type == 'week':
+            days = int(value) * 7
+
+        elif calendar_day_type == 'day':
+            days = int(value) * 1
+
+        return days
+
+    @staticmethod
+    def calculate_seconds(day_type, value):
+        seconds = 1
+
+        if day_type == 'hour':
+            seconds = int(value) * 3600
+
+        elif day_type == 'minute':
+            seconds = int(value) * 60
+
+        elif day_type == 'second':
+            seconds = int(value) * 1
+
+        return seconds
+
+    @staticmethod
+    def remove_symbols(arr):
+        for i in range(len(arr)):
+            try:
+                if arr[i] == 'и' or arr[i] == ',':
+                    del arr[i:i + 1]
+            except IndexError:
+                break
+
+        return arr
+
+    def parse_times_from_slice(self, msg, ct):
+        pass
+
+    def parse_absolute_times_from_slice(self, msg, ct):
+        pass
+
+
+class AtHandler(Handler):
+    def handle(self, msg_arr, c_dt):
+        msg_arr = msg_arr[1:]
+        new_dt = None
+        new_msg_arr = []
+        err = ''
+
+        if re.search('\d\d?', msg_arr[0]) and re.search('(часик|часо?в?|минуты?|секунды?)', msg_arr[1]):
+            (new_dt, new_msg_arr, err) = self.parse_times_from_slice(msg_arr, c_dt)
+
+        elif re.search('\d\d?', msg_arr[0]) or re.search('\d\d?:\d\d', msg_arr[0]):
+            (new_dt, new_msg_arr, err) = self.parse_absolute_times_from_slice(msg_arr, c_dt)
+
+        else:
+            err = 'Ошибка'
+
+        return (
+            new_dt,
+            new_msg_arr,
+            err
+        )
+
+    def is_match(self, val):
+        return val[0].lower() == 'в'
+
+    def handle_times_absolute(self, current_time, msg):
+        split_time = msg[0].split(':')
+
+        if len(split_time) != 0:
+            hours = split_time[0]
+            minutes = split_time[1] if len(split_time) == 2 else 0
+            return self.handle_time(current_time, hours, minutes, 0)
+
+        else:
+            return False
+
+    def parse_times_from_slice(self, msg_arr, c_dt):
+        offset = 0
+        time_arr = msg_arr[:]
+        available_time_arr = []
+        times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
+        new_current_datetime = None
+        err = ''
+
+        time_arr = Handler.remove_symbols(time_arr)
+
+        for t in range(len(time_arr)):
+
+            if re.search('\d\d?', time_arr[t]) and re.search('(часик|часо?в?|минуты?|секунды?)', time_arr[t + 1]):
+                available_time_arr.append([time_arr[t], time_arr[t + 1]])
+                offset = offset + 2
+
+            elif re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', time_arr[t]):
+                times_of_day = time_arr[t]
+                offset = offset + 1
+
+        if len(available_time_arr) != 0:
+            (hh, mm, ss, err) = self.parse_time(available_time_arr, times_of_day)
+
+            new_time = Handler.handle_time(hh, mm, ss)
+            new_current_datetime = Handler.set_time(c_dt.date(), new_time)
+            check_time = Handler.check_time(new_current_datetime)
+
+            if check_time is not True:
+                (err) = check_time  # вывод ошибки если указанное время меньше текущего
+
+        return (
+            new_current_datetime,
+            msg_arr[offset:],
+            err
+        )
+
+    def parse_time(self, available_time_arr, times_of_day=None):
+        h = 0
+        m = 0
+        s = 0
+        err = ''
+
+        for t in available_time_arr:
+
+            if re.search('(час[ао]?в?)', t[1]):
+                if times_of_day is None:
+                    h = t[0]
+
+                else:
+                    (h, err) = self.handle_set_time_times_of_day(times_of_day, t[0])
+
+            elif re.search('минуты?', t[1]):
+                m = t[0]
+
+            elif re.search('секунды?', t[1]):
+                s = t[0]
+
+        return (
+            h,
+            m,
+            s,
+            err
+        )
+
     def handle_set_time_times_of_day(times_of_day, hours):
         h = hours
         err = ''
-
         try:
             if re.search('(вечера?о?м?)', times_of_day):
                 h = time_data['at']['вечер'][hours]
@@ -299,86 +474,103 @@ class Handler:
                 err
             )
 
-    # Методя для добавления Даты к текущей дате
-    # @params current_dt - текущая дата в формате datetime.datetime
-    # @params added_date - сколько нужно добавить дат в формате datetime.datetime
-    # return - новое значение даты (d - день, m - месяц, y - год)
-    @staticmethod
-    def addition_date(current_dt, days):
-        return (
-            current_dt + datetime.timedelta(days=days),
-            ''
-        )
-
-    # Методя для добавления времени к текущему времени
-    # @params current_dt - текущее время в формате datetime.datetime
-    # @params seconds - сколько нужно добавить времени в формате datetime.datetime
-    # return - новое значение времени (h - часы, m - минуты, s - секунды)
-    @staticmethod
-    def addition_time(current_dt, seconds):
-        return (
-            current_dt + datetime.timedelta(seconds=seconds),
-            ''
-        )
-
-    # Метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
-    # @params available_time_arr - массив массивов времени [[\d\, \str\]]
-    # @params times_of_day - модификатор времени (по дефолту равен None)
-    # return - новое значение времени (h - часы, m - минуты, s - секунды)
-    @staticmethod
-    def parse_time(available_time_arr, times_of_day=None):
-        h = 0
-        m = 0
-        s = 0
+    def parse_absolute_times_from_slice(self, msg, ct):
+        offset = 1
+        time_arr = msg[0].split(':')
+        times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
         err = ''
 
-        for t in available_time_arr:
+        if re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', msg[1]):
+            times_of_day = msg[1]
+            offset = offset + 1
 
-            if re.search('часо?в?', t[1]):
-                if times_of_day is None:
-                    h = t[0]
+        hh = time_arr[0] if time_arr[0] in time_arr else 0
 
-                else:
-                    (h, err) = Handler.handle_set_time_times_of_day(times_of_day, t[0])
+        if times_of_day is not None:
+            (hh, err) = self.handle_set_time_times_of_day(times_of_day, hh)
 
-            elif re.search('минуты?', t[1]):
-                m = t[0]
+        mm = time_arr[1] if len(time_arr) >= 2 else 0
+        ss = time_arr[2] if len(time_arr) == 3 else 0
 
-            elif re.search('секунды?', t[1]):
-                s = t[0]
+        new_time = Handler.handle_time(hh, mm, ss)
+        new_current_datetime = Handler.set_time(ct.date(), new_time)
+        check_time = Handler.check_time(new_current_datetime)
+
+        if check_time is not True:
+            (err) = check_time  # вывод ошибки если указанное время меньше текущего
 
         return (
-            h,
-            m,
-            s,
+            new_current_datetime,
+            msg[offset:],
             err
         )
 
-    @staticmethod
-    def calculate_day(calendar_day_type, value):
-        day = 1
 
-        if calendar_day_type == 'year':
-            day = int(value) * 365
-
-        elif calendar_day_type == 'month':
-            day = int(value) * 30
-
-        elif calendar_day_type == 'week':
-            day = int(value) * 7
-
-        elif calendar_day_type == 'day':
-            day = int(value) * 1
-
-        return day
-
-    # Метод для парсинга нового времени в виде массива ['3 часа', '10 минут']
-    # @params available_date_arr - массив массивов времени [[\d\, \str\]]
-    # return - новое значение даты (dd - дни, mm - месяцы, yy - годы)
-    @staticmethod
-    def parse_date(current_time, available_date_arr):
-        days = 0
+class InHandler(Handler):
+    def handle(self, msg_arr, c_dt):
+        msg_arr = msg_arr[1:]
+        pattern_date = '(года?|лет|дня|дней|день|недел[яиью]|месяцев|месяца?)'
+        pattern_time = '(часик|часо?в?|минуты?|секунды?)'
         err = ''
+
+        if c_dt is None:
+            c_dt = datetime.datetime.now()
+
+        if re.search(pattern_date, msg_arr[0]) or (re.search('\d\d?', msg_arr[0]) and re.search(pattern_date, msg_arr[1])):
+            (c_dt, msg_arr, err) = self.parse_dates_from_slice(msg_arr, c_dt)
+
+        if re.search(pattern_time, msg_arr[0]) or re.search('\d\d?', msg_arr[0]) and re.search(pattern_time, msg_arr[1]):
+            (c_dt, msg_arr, err) = self.parse_times_from_slice(msg_arr, c_dt)
+
+        return (
+            c_dt,
+            msg_arr,
+            err
+        )
+
+    def is_match(self, val):
+        return val[0].lower() == 'через'
+
+    def parse_dates_from_slice(self, msg_arr, c_dt):
+        offset = 0
+        time_arr = msg_arr[:]
+        available_date_arr = []
+        new_dt = None
+        err = ''
+        pattern_date = '(года?|лет|дня|дней|день|недел[иьюя]|месяцев|месяца?)'
+        pattern_time = '\d\d?'
+
+        time_arr = Handler.remove_symbols(time_arr)
+
+        for t in range(len(time_arr)):
+            try:
+                if re.search(pattern_date, time_arr[t + 1]) and re.search(pattern_time, time_arr[t]):
+                    available_date_arr.append([time_arr[t], time_arr[t + 1]])
+                    offset = offset + 2
+
+                elif (re.search(pattern_time, time_arr[t - 1]) is None) and re.search('(^год$|^месяц$|^неделю$|^день$)', time_arr[t]):
+
+                    available_date_arr.append([1, time_arr[t]])
+                    offset = offset + 1
+
+            except IndexError:
+                break
+
+        if len(available_date_arr) != 0:
+            (new_dt, err) = self.parse_and_added_date(c_dt, available_date_arr)
+            check_time = Handler.check_time(new_dt)
+
+            if check_time is not True:
+                (err) = check_time  # вывод ошибки если указанное время меньше текущего
+
+        return (
+            new_dt,
+            msg_arr[offset:],
+            err
+        )
+
+    def parse_and_added_date(self, current_time, available_date_arr):
+        days = 0
 
         for t in available_date_arr:
             if re.search('(года?|лет)', t[1]):
@@ -400,175 +592,65 @@ class Handler:
             err
         )
 
-    @staticmethod
-    def parse_dates_from_slice(msg_slice, current_time):
+    def parse_times_from_slice(self, msg_arr, c_dt):
         offset = 0
-        time_arr = msg_slice[:]
-        available_date_arr = []
-        new_current_datetime = None
-        err = ''
-
-        for t in range(len(time_arr)):
-            if re.search('\d\d?', time_arr[t]) and re.search('(года?|лет|дня|дней|день|недел[яиь]|месяцев|месяца?)', time_arr[t + 1]):
-                available_date_arr.append([time_arr[t], time_arr[t + 1]])
-                offset = offset + 2
-
-            elif time_arr[t] == 'и':
-                offset = offset + 1
-
-        if len(available_date_arr) != 0:
-            (new_dt, err) = Handler.parse_date(current_time, available_date_arr)
-
-            # new_time = Handler.handle_time(hh, mm, ss)
-            # new_current_datetime = Handler.set_time(current_time.date(), new_time)
-            # check_time = Handler.check_time(new_current_datetime)
-
-            # if check_time is not True:
-            #     (err) = check_time  # вывод ошибки если указанное время меньше текущего
-        print(new_dt)
-
-        return (
-            new_current_datetime,
-            msg_slice[offset:],
-            err
-        )
-
-    # Метод для парсинга времени в текстовом формате (1 час, 5 минут и тп)
-    # @params msg_slice - массив сообщения
-    # @params current_time - текущее время, созданное в классе Reminder
-    # return - кортеж: новое значение времени (h - часы, m - минуты, s - секунды) и обрезанное сообщение
-    @staticmethod
-    def parse_times_from_slice(msg_slice, current_time):
-        offset = 0
-        time_arr = msg_slice[:]
+        time_arr = msg_arr[:]
         available_time_arr = []
-        times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
-        new_current_datetime = None
         err = ''
+        new_dt = c_dt
+
+        time_arr = Handler.remove_symbols(time_arr)
 
         for t in range(len(time_arr)):
 
-            if re.search('\d\d?', time_arr[t]) and re.search('(часо?в?|минуты?|секунды?)', time_arr[t + 1]):
+            if re.search('\d\d?', time_arr[t]) and re.search('(часик|часо?в?|минуты?|секунды?)', time_arr[t + 1]):
                 available_time_arr.append([time_arr[t], time_arr[t + 1]])
                 offset = offset + 2
 
-            elif re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', time_arr[t]):
-                times_of_day = time_arr[t]
+            elif re.search('(^час$|^часик$)', time_arr[t]):
+                available_time_arr.append([1, time_arr[t]])
                 offset = offset + 1
 
-            elif time_arr[t] == 'и':
+            elif re.search('(^полчаса$|^полчасика$)', time_arr[t]):
+                available_time_arr.append([30, time_arr[t]])
                 offset = offset + 1
 
         if len(available_time_arr) != 0:
-            (hh, mm, ss, err) = Handler.parse_time(available_time_arr, times_of_day)
+            (new_dt, err) = self.parse_and_added_time(c_dt, available_time_arr)
 
-            new_time = Handler.handle_time(hh, mm, ss)
-            new_current_datetime = Handler.set_time(current_time.date(), new_time)
-            check_time = Handler.check_time(new_current_datetime)
+            check_time = Handler.check_time(new_dt)
 
             if check_time is not True:
                 (err) = check_time  # вывод ошибки если указанное время меньше текущего
 
         return (
-            new_current_datetime,
-            msg_slice[offset:],
+            new_dt,
+            msg_arr[offset:],
             err
         )
 
-    @staticmethod
-    def parse_absolute_times_from_slice(msg_slice, current_time):
-        offset = 1
-        time_arr = msg_slice[0].split(':')
-        times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
-        err = ''
+    def parse_and_added_time(self, c_dt, available_time_arr):
+        seconds = 0
 
-        if re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', msg_slice[1]):
-            times_of_day = msg_slice[1]
-            offset = offset + 1
+        for t in available_time_arr:
+            if re.search('(^полчаса$|^полчасика$)', t[1]):
+                seconds = seconds + Handler.calculate_seconds('minute', t[0])
 
-        hh = time_arr[0] if time_arr[0] in time_arr else 0
+            elif re.search('(часов|часа?)', t[1]):
+                seconds = seconds + Handler.calculate_seconds('hour', t[0])
 
-        if times_of_day is not None:
-            (hh, err) = Handler.handle_set_time_times_of_day(times_of_day, hh)
+            elif re.search('(минуты?)', t[1]):
+                seconds = seconds + Handler.calculate_seconds('minute', t[0])
 
-        mm = time_arr[1] if len(time_arr) >= 2 else 0
-        ss = time_arr[2] if len(time_arr) == 3 else 0
+            elif re.search('(секунды?)', t[1]):
+                seconds = seconds + Handler.calculate_seconds('second', t[0])
 
-        new_time = Handler.handle_time(hh, mm, ss)
-        new_current_datetime = Handler.set_time(current_time.date(), new_time)
-        check_time = Handler.check_time(new_current_datetime)
-
-        if check_time is not True:
-            (err) = check_time  # вывод ошибки если указанное время меньше текущего
+        (new_dt, err) = Handler.addition_time(c_dt, seconds)
 
         return (
-            new_current_datetime,
-            msg_slice[offset:],
+            new_dt,
             err
         )
-
-
-class AtHandler(Handler):
-    def handle(self, msg_slice, current_time):
-        msg_slice = msg_slice[1:]
-
-        if re.search('\d\d?', msg_slice[0]) and re.search('(часо?в?|минуты?|секунды?)', msg_slice[1]):
-            (new_current_time, new_msg_slice, err) = self.parse_times_from_slice(msg_slice, current_time)
-
-        elif re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0]):
-            (new_current_time, new_msg_slice, err) = self.parse_absolute_times_from_slice(msg_slice, current_time)
-
-        else:
-            return False
-
-        return (
-            new_current_time,
-            new_msg_slice,
-            err
-        )
-
-    def is_match(self, val):
-        return val[0].lower() == 'в'
-
-    def handle_times_absolute(self, current_time, msg):
-        split_time = msg[0].split(':')
-
-        if len(split_time) != 0:
-            hours = split_time[0]
-            minutes = split_time[1] if len(split_time) == 2 else 0
-            return self.handle_time(current_time, hours, minutes, 0)
-
-        else:
-            return False
-
-
-class InHandler(Handler):
-    def handle(self, msg_slice, current_time):
-        msg_slice = msg_slice[1:]
-
-        if current_time is None:
-            current_time = datetime.datetime.now()
-
-        if re.search('\d\d?', msg_slice[0]) and re.search('(года?|лет|дня|дней|день|недел[яиь]|месяцев|месяца?)', msg_slice[1]):
-            (new_current_time, new_msg_slice, err) = self.parse_dates_from_slice(msg_slice, current_time)
-
-        # if re.search('\d\d?', msg_slice[0]) and re.search('(часо?в?|минуты?|секунды?)', msg_slice[1]):
-        #     (new_current_time, new_msg_slice, err) = self.parse_times_from_slice(msg_slice, current_time)
-        #
-        # elif re.search('\d\d?', msg_slice[0]) or re.search('\d\d?:\d\d', msg_slice[0]):
-        #     (new_current_time, new_msg_slice, err) = self.parse_absolute_times_from_slice(msg_slice, current_time)
-        #
-        # else:
-        #     return False
-
-        return (
-            current_time,
-            msg_slice,
-            ''
-        )
-
-    def is_match(self, val):
-        return val[0].lower() == 'через'
 
 
 class TodayHandler(Handler):
@@ -722,8 +804,7 @@ class Reminder:
         print('Done')
 
 
-# reminder = Reminder(msg='напомни мне завтра в 5 часов 25 минут дня пойти на встречу с пидорасами')
-reminder = Reminder(msg='напомни мне через 1 месяца 3 недели 5 дней 5 часов 44 минуты 20 секунд купить дилдак по скидке')
+reminder = Reminder(msg='напомни мне сегодня через полчаса купить дилдак по скидке')
 reminder.start()
 
 "hello {name} today is {weekday}".format(
