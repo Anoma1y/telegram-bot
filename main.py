@@ -174,6 +174,20 @@ time_data = {
             '5': 5,
             '6': 6,
         }
+    },
+    'month': {
+        'января': 1,
+        'февраля': 2,
+        'марта': 3,
+        'апреля': 4,
+        'мая': 5,
+        'июня': 6,
+        'июля': 7,
+        'августа': 8,
+        'сентября': 9,
+        'октября': 10,
+        'ноября': 11,
+        'декабря': 12,
     }
 }
 
@@ -186,6 +200,12 @@ class Handler:
         pass
 
     def is_match(self, val):
+        pass
+
+    def parse_times_from_slice(self, msg, ct):
+        pass
+
+    def parse_absolute_times_from_slice(self, msg, ct):
         pass
 
     # Статический метод для добавления нового времени
@@ -340,12 +360,6 @@ class Handler:
 
         return arr
 
-    def parse_times_from_slice(self, msg, ct):
-        pass
-
-    def parse_absolute_times_from_slice(self, msg, ct):
-        pass
-
 
 class AtHandler(Handler):
     def handle(self, msg_arr, c_dt):
@@ -353,6 +367,9 @@ class AtHandler(Handler):
         new_dt = None
         new_msg_arr = []
         err = ''
+
+        if c_dt is None:
+            c_dt = datetime.datetime.now()
 
         if re.search('\d\d?', msg_arr[0]) and re.search('(часик|часо?в?|минуты?|секунды?)', msg_arr[1]):
             (new_dt, new_msg_arr, err) = self.parse_times_from_slice(msg_arr, c_dt)
@@ -372,13 +389,13 @@ class AtHandler(Handler):
     def is_match(self, val):
         return val[0].lower() == 'в'
 
-    def handle_times_absolute(self, current_time, msg):
+    def handle_times_absolute(self, c_dt, msg):
         split_time = msg[0].split(':')
 
         if len(split_time) != 0:
             hours = split_time[0]
             minutes = split_time[1] if len(split_time) == 2 else 0
-            return self.handle_time(current_time, hours, minutes, 0)
+            return self.handle_time(c_dt, hours, minutes, 0)
 
         else:
             return False
@@ -447,7 +464,7 @@ class AtHandler(Handler):
             err
         )
 
-    def handle_set_time_times_of_day(times_of_day, hours):
+    def handle_set_time_times_of_day(self, times_of_day, hours):
         h = hours
         err = ''
         try:
@@ -717,6 +734,32 @@ class TomorrowHandler(Handler):
         return False
 
 
+class ExactHandler(Handler):
+    def handle(self, msg_arr, c_dt):
+        day = int(msg_arr[0])
+        month = time_data['month'][msg_arr[1]]
+
+        new_date = datetime.date(
+            day=day,
+            month=month,
+            year=datetime.datetime.now().year
+        )
+        new_time = datetime.time(0,0,0)
+
+        new_dt = datetime.datetime.combine(new_date, new_time)
+
+        return (
+            new_dt,
+            msg_arr[2:],
+            ''
+        )
+
+    def is_match(self, val):
+        pattern_month = '(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)'
+
+        return re.search('\d\d?(ого)?', val[0]) and re.search(pattern_month, val[1])
+
+
 class Reminder:
 
     def __init__(self, msg):
@@ -729,7 +772,8 @@ class Reminder:
             InHandler(),
             AtHandler(),
             TodayHandler(),
-            TomorrowHandler()
+            TomorrowHandler(),
+            ExactHandler()
         ]
 
     @property
@@ -804,7 +848,7 @@ class Reminder:
         print('Done')
 
 
-reminder = Reminder(msg='напомни мне сегодня через полчаса купить дилдак по скидке')
+reminder = Reminder(msg='напомни мне 17 августа в 10 часов 17 минут 22 секунд вечера купить дилдак по скидке')
 reminder.start()
 
 "hello {name} today is {weekday}".format(
