@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 import telegram
 import re
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
-import logging
 # import postgresql
 import yandere
 import config as CONFIG
@@ -848,64 +848,55 @@ class Reminder:
         print('Done')
 
 
-reminder = Reminder(msg='напомни мне 17 августа в 10 часов 17 минут 22 секунд вечера купить дилдак по скидке')
-reminder.start()
-
-"hello {name} today is {weekday}".format(
-    name="john",
-    weekday="sunday"
-)
-
+# reminder = Reminder(msg='напомни мне завтра в 5 часов 17 минут 22 секунд ночи купить дилдак по скидке')
+# reminder.start()
 
 # def text_message(bot, update):
 #     response = 'Получил Ваше сообщение: ' + update.message.text
 #     bot.send_message(chat_id=update.message.chat_id, text=response)
-#
-#
+
+
 # def set_notification(bot, update):
-#     ins = db.prepare("INSERT INTO reminder (user_id, creator_id, message, notify_at) VALUES (24787878232, 545777888833, 'Тестовый с питона', 'now()')")
+#     ins = db.prepare("INSERT INTO reminder (user_id, creator_id, message, notify_at) VALUES (1, 2, '1', 'now()')")
 #
 #     bot.send_message(chat_id=update.message.chat_id, text='Добавлено')
-#
-#
+
+
 # updater = Updater(token=CONFIG.TOKEN)
 # dispatcher = updater.dispatcher
-#
-#
+
 # @run_async
 # def starter(bot, update):
-#     print('Hui start')
+#     # print('Hui start')
 #     while True:
 #         pass
-#         get_emp_with_salary_lt = db.query("SELECT message FROM reminder WHERE notify_at > now()")
+#         # get_emp_with_salary_lt = db.query("SELECT message FROM reminder WHERE notify_at > now()")
 #
-#         print(get_emp_with_salary_lt)
-#         sleep(2)
-#
-#
+#         # print(get_emp_with_salary_lt)
+#         # sleep(2)
+
+
 # def main():
 #     try:
 #         text_message_handler = MessageHandler(Filters.text, text_message)
-#         start_command_handler = CommandHandler('start', starter)
+#         # start_command_handler = CommandHandler('start', starter)
 #         tags_command_handler = CommandHandler('tags', send_tags)
 #         image_command_handler = CommandHandler('image', send_album)
 #         help_command_handler = CommandHandler('help', get_help_command_list)
-#         set_command_handler = CommandHandler('set', set_notification)
-#
-#         dispatcher.add_handler(start_command_handler)
+#         # set_command_handler = CommandHandler('set', set_notification)
+#         # dispatcher.add_handler(start_command_handler)
 #         dispatcher.add_handler(tags_command_handler)
 #         dispatcher.add_handler(image_command_handler)
 #         dispatcher.add_handler(help_command_handler)
-#         dispatcher.add_handler(set_command_handler)
+#         # dispatcher.add_handler(set_command_handler)
 #         dispatcher.add_handler(text_message_handler)
-#         # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 #
 #         updater.start_polling(clean=True)
 #
 #         updater.idle()
 #     except Exception as e:
 #         print("type error: " + str(e))
-
+#
 #
 # if __name__ == '__main__':
 #     try:
