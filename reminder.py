@@ -671,8 +671,8 @@ class Reminder:
     def __init__(self, msg):
         self._msg = msg
         self._msg_arr = []
-        self._msg_arr_slice = []
         self._time = None
+        self._remind_msg = ''
 
         self.handlers = [
             InHandler(),
@@ -695,20 +695,21 @@ class Reminder:
         return self._time
 
     @property
-    def msg_arr_slice(self):
-        return self._msg_arr_slice
+    def remind_msg(self):
+        return self._remind_msg
 
     @msg_arr.setter
     def msg_arr(self, value):
         self._msg_arr = value
 
+    @remind_msg.setter
+    def remind_msg(self, msg_arr):
+        remind_msg = ' '.join(msg_arr)
+        self._remind_msg = remind_msg
+
     @time.setter
     def time(self, value):
         self._time = value
-
-    @msg_arr_slice.setter
-    def msg_arr_slice(self, value):
-        self._msg_arr_slice = value
 
     # Метод поиска команды для запуска парсера
     def parse_command(self):
@@ -727,28 +728,35 @@ class Reminder:
 
     def start(self):
         self.parse_command()
-        self.msg_arr_slice = self.msg_arr
+        # self.msg_arr_slice = self.msg_arr
         is_check = True
+        updates_tick = 1
 
         while is_check:
 
             for handle in self.handlers:
 
-                if handle.is_match(val=self.msg_arr_slice):
+                updates_tick = updates_tick + 1
+                if handle.is_match(val=self.msg_arr):
 
-                    ( new_current_time, new_msg_slice, err ) = handle.handle(self.msg_arr_slice, self.time)
+                    (new_current_time, new_msg_slice, err) = handle.handle(self.msg_arr, self.time)
 
                     if len(err) != 0:
                         print(err)
                         is_check = False
 
-                    self.msg_arr_slice = new_msg_slice
+                    self.msg_arr = new_msg_slice
                     self.time = new_current_time
 
-                elif len(self.msg_arr_slice) == 0:
+                    updates_tick = 1
+
+                elif (len(self.msg_arr) == 0) or (len(self.handlers) < updates_tick):
                     is_check = False
 
             sleep(1)
-            print('Reminder time: ', self.time)
 
+        self.remind_msg = self.msg_arr
+
+        print(self.remind_msg)
+        print('Reminder time: ', self.time)
         print('Done')
