@@ -269,8 +269,16 @@ class Handler:
 
 class AtHandler(Handler):
     def handle(self, msg_arr, c_dt):
+
+        if (re.search('\d\d?', msg_arr[1]) is None) or (re.search('(часик|часо?в?|минуты?|секунды?)', msg_arr[1]) is None):
+            return (
+                c_dt,
+                msg_arr,
+                'end'
+            )
+
         msg_arr = msg_arr[1:]
-        new_dt = None
+        new_dt = c_dt
         new_msg_arr = []
         err = ''
 
@@ -282,6 +290,7 @@ class AtHandler(Handler):
 
         elif re.search('\d\d?', msg_arr[0]) or re.search('\d\d?:\d\d', msg_arr[0]):
             (new_dt, new_msg_arr, err) = self.parse_absolute_times_from_slice(msg_arr, c_dt)
+        # print(new_msg_arr)
 
         else:
             err = 'Ошибка'
@@ -431,9 +440,10 @@ class AtHandler(Handler):
 
 class InHandler(Handler):
     def handle(self, msg_arr, c_dt):
-        msg_arr = msg_arr[1:]
         pattern_date = '(года?|лет|дня|дней|день|недел[яиью]|месяцев|месяца?)'
         pattern_time = '(часик|часо?в?|минуты?|секунды?)'
+
+        msg_arr = msg_arr[1:]
         err = ''
 
         if c_dt is None:
@@ -442,7 +452,7 @@ class InHandler(Handler):
         if re.search(pattern_date, msg_arr[0]) or (re.search('\d\d?', msg_arr[0]) and re.search(pattern_date, msg_arr[1])):
             (c_dt, msg_arr, err) = self.parse_dates_from_slice(msg_arr, c_dt)
 
-        if re.search(pattern_time, msg_arr[0]) or re.search('\d\d?', msg_arr[0]) and re.search(pattern_time, msg_arr[1]):
+        if re.search(pattern_time, msg_arr[0]) or (re.search('\d\d?', msg_arr[0]) and re.search(pattern_time, msg_arr[1])):
             (c_dt, msg_arr, err) = self.parse_times_from_slice(msg_arr, c_dt)
 
         return (
@@ -650,7 +660,7 @@ class ExactHandler(Handler):
             month=month,
             year=datetime.datetime.now().year
         )
-        new_time = datetime.time(0,0,0)
+        new_time = datetime.time(0, 0, 0)
 
         new_dt = datetime.datetime.combine(new_date, new_time)
 
@@ -733,27 +743,56 @@ class Reminder:
         updates_tick = 1
 
         while is_check:
+            if not self.msg_arr:
+                break
 
+            is_handled = False
             for handle in self.handlers:
-
-                updates_tick = updates_tick + 1
                 if handle.is_match(val=self.msg_arr):
-
                     (new_current_time, new_msg_slice, err) = handle.handle(self.msg_arr, self.time)
 
-                    if len(err) != 0:
+                    if err == 'end':
+                        is_check = False
+                        break
+
+                    if err:
                         print(err)
                         is_check = False
+                        break
 
                     self.msg_arr = new_msg_slice
                     self.time = new_current_time
+                    is_handled = True
 
-                    updates_tick = 1
-
-                elif (len(self.msg_arr) == 0) or (len(self.handlers) < updates_tick):
-                    is_check = False
+            if not is_handled:
+                break
 
             sleep(1)
+
+
+        # while is_check:
+        #
+        #     for handle in self.handlers:
+        #
+        #         # updates_tick = updates_tick + 1
+        #         if handle.is_match(val=self.msg_arr):
+        #
+        #             (new_current_time, new_msg_slice, err) = handle.handle(self.msg_arr, self.time)
+        #
+        #             if len(err) != 0:
+        #                 print(err)
+        #                 is_check = False
+        #                 break
+        #
+        #             self.msg_arr = new_msg_slice
+        #             self.time = new_current_time
+        #
+        #             # updates_tick = 1
+        #
+        #         elif (len(self.msg_arr) == 0) or (len(self.handlers) < updates_tick):
+        #             is_check = False
+
+            # sleep(1)
 
         self.remind_msg = self.msg_arr
 
