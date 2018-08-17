@@ -92,7 +92,7 @@ def error():
     pass
 
 
-reminder = Reminder(msg='напомни мне через час встреча')
+reminder = Reminder(msg='напомни мне 17.08.2018 в 18:03 встреча с кем то там')
 reminder.start()
 
 # def text_message(bot, update):

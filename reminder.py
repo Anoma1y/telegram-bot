@@ -139,7 +139,12 @@ class Handler:
     def handle_date(*new_date):
         day = int(new_date[0])
         month = int(new_date[1])
-        year = int(new_date[2])
+        year = str(new_date[2])
+
+        if len(year) == 2:
+            year = '20' + year
+
+        year = int(year)
 
         c_d = datetime.datetime.now()
 
@@ -179,6 +184,18 @@ class Handler:
             msg,
             err
         )
+
+    # Метод для проверки даты
+    # @params new_date - проверяемая дата
+    # return - True, иначе если ошибка, вернет объект с указанием ошибки
+    @staticmethod
+    def check_date(new_date):
+        c_t = datetime.datetime.now()
+
+        if c_t.date() < new_date.date():
+            return 'Указаная дата меньше текущей'
+
+        return True
 
     # Метод для проверки времени
     # @params new_time - проверяемое время
@@ -270,7 +287,8 @@ class Handler:
 class AtHandler(Handler):
     def handle(self, msg_arr, c_dt):
 
-        if (re.search('\d\d?', msg_arr[1]) is None) or (re.search('(часик|часо?в?|минуты?|секунды?)', msg_arr[1]) is None):
+        if (re.search('\d\d?', msg_arr[1]) is None) or (re.search('(часик|часо?в?|минуты?|секунды?)', msg_arr[1]) is None) \
+                and ((re.search('\d\d?:\d\d', msg_arr[1]) or re.search('\d\d?', msg_arr[1])) is None):
             return (
                 c_dt,
                 msg_arr,
@@ -290,7 +308,6 @@ class AtHandler(Handler):
 
         elif re.search('\d\d?', msg_arr[0]) or re.search('\d\d?:\d\d', msg_arr[0]):
             (new_dt, new_msg_arr, err) = self.parse_absolute_times_from_slice(msg_arr, c_dt)
-        # print(new_msg_arr)
 
         else:
             err = 'Ошибка'
@@ -652,28 +669,64 @@ class TomorrowHandler(Handler):
 
 class ExactHandler(Handler):
     def handle(self, msg_arr, c_dt):
-        day = int(msg_arr[0])
-        month = time_data['month'][msg_arr[1]]
 
-        new_date = datetime.date(
-            day=day,
-            month=month,
-            year=datetime.datetime.now().year
-        )
-        new_time = datetime.time(0, 0, 0)
+        if c_dt is None:
+            c_dt = datetime.datetime.now()
 
-        new_dt = datetime.datetime.combine(new_date, new_time)
+        # day = int(msg_arr[0])
+        # month = time_data['month'][msg_arr[1]]
+        #
+        # new_date = datetime.date(
+        #     day=day,
+        #     month=month,
+        #     year=datetime.datetime.now().year
+        # )
+        # new_time = datetime.time(0, 0, 0)
+        #
+        # new_dt = datetime.datetime.combine(new_date, new_time)
+        pattern_month = '(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)'
+        
+        if re.search('^\d\d?.\d\d?.(\d\d|\d\d\d\d)$', msg_arr[0]):
+            (new_dt, new_msg_arr, err) = self.parse_absolute_times_from_slice(msg_arr, c_dt)
+
+        elif re.search('\d\d?', msg_arr[0]) and re.search('')
 
         return (
             new_dt,
-            msg_arr[2:],
-            ''
+            new_msg_arr,
+            err
         )
 
     def is_match(self, val):
         pattern_month = '(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)'
 
-        return re.search('\d\d?(ого)?', val[0]) and re.search(pattern_month, val[1])
+        return (re.search('\d\d?(ого)?', val[0]) and re.search(pattern_month, val[1])) or re.search('^\d\d?.\d\d?.(\d\d|\d\d\d\d)$', val[0])
+
+    def parse_times_from_slice(self, msg, ct):
+        pass
+
+    def parse_absolute_times_from_slice(self, msg, ct):
+        offset = 1
+        date_arr = re.findall(r"[\w']+", msg[0])
+        err = ''
+
+        dd = date_arr[0] if date_arr[0] in date_arr else 0
+        mm = date_arr[1] if len(date_arr) >= 2 else 0
+        yy = date_arr[2] if len(date_arr) == 3 else 0
+
+        new_date = Handler.handle_date(dd, mm, yy)
+
+        new_current_datetime = Handler.set_time(new_date, ct.time())
+        check_date = Handler.check_date(new_current_datetime)
+
+        if check_date is not True:
+            (err) = check_date  # вывод ошибки если указанное время меньше текущего
+
+        return (
+            new_current_datetime,
+            msg[offset:],
+            err
+        )
 
 
 class Reminder:
@@ -730,8 +783,8 @@ class Reminder:
 
             if re.search('^что\s', msg[len(remind_word):].strip()):
                 self.msg_arr = msg[(len(remind_word) + 5):].strip().split(' ')
-
-            self.msg_arr = msg[len(remind_word):].strip().split(' ')
+            else:
+                self.msg_arr = msg[len(remind_word):].strip().split(' ')
 
         else:
             self.msg_arr = ''
