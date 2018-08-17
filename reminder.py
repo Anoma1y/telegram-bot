@@ -192,7 +192,7 @@ class Handler:
     def check_date(new_date):
         c_t = datetime.datetime.now()
 
-        if c_t.date() < new_date.date():
+        if c_t.date() > new_date.date():
             return 'Указаная дата меньше текущей'
 
         return True
@@ -272,17 +272,6 @@ class Handler:
 
         return seconds
 
-    @staticmethod
-    def remove_symbols(arr):
-        for i in range(len(arr)):
-            try:
-                if arr[i] == 'и' or arr[i] == ',':
-                    del arr[i:i + 1]
-            except IndexError:
-                break
-
-        return arr
-
 
 class AtHandler(Handler):
     def handle(self, msg_arr, c_dt):
@@ -339,18 +328,29 @@ class AtHandler(Handler):
         times_of_day = None  # модификатор времени (утра, дня, вечера, ночи)
         new_current_datetime = None
         err = ''
-
-        time_arr = Handler.remove_symbols(time_arr)
+        check_exit = 0
 
         for t in range(len(time_arr)):
 
             if re.search('\d\d?', time_arr[t]) and re.search('(часик|часо?в?|минуты?|секунды?)', time_arr[t + 1]):
                 available_time_arr.append([time_arr[t], time_arr[t + 1]])
                 offset = offset + 2
+                check_exit = 0
+                continue
 
             elif re.search('((вечера?о?м?)|утра|(ночи?ь?ю?)|дня)', time_arr[t]):
                 times_of_day = time_arr[t]
                 offset = offset + 1
+                continue
+
+            if time_arr[t] == 'и' or time_arr[t] == ',':
+                offset = offset + 1
+                continue
+
+            check_exit = check_exit + 1
+
+            if check_exit > 1:
+                break
 
         if len(available_time_arr) != 0:
             (hh, mm, ss, err) = self.parse_time(available_time_arr, times_of_day)
@@ -489,19 +489,28 @@ class InHandler(Handler):
         err = ''
         pattern_date = '(года?|лет|дня|дней|день|недел[иьюя]|месяцев|месяца?)'
         pattern_time = '\d\d?'
-
-        time_arr = Handler.remove_symbols(time_arr)
+        check_exit = 0
 
         for t in range(len(time_arr)):
             try:
                 if re.search(pattern_date, time_arr[t + 1]) and re.search(pattern_time, time_arr[t]):
                     available_date_arr.append([time_arr[t], time_arr[t + 1]])
                     offset = offset + 2
+                    continue
 
                 elif (re.search(pattern_time, time_arr[t - 1]) is None) and re.search('(^год$|^месяц$|^неделю$|^день$)', time_arr[t]):
-
                     available_date_arr.append([1, time_arr[t]])
                     offset = offset + 1
+                    continue
+
+                if time_arr[t] == 'и' or time_arr[t] == ',':
+                    offset = offset + 1
+                    continue
+
+                check_exit = check_exit + 1
+
+                if check_exit > 1:
+                    break
 
             except IndexError:
                 break
@@ -548,22 +557,33 @@ class InHandler(Handler):
         available_time_arr = []
         err = ''
         new_dt = c_dt
-
-        time_arr = Handler.remove_symbols(time_arr)
+        check_exit = 0
 
         for t in range(len(time_arr)):
 
             if re.search('\d\d?', time_arr[t]) and re.search('(часик|часо?в?|минуты?|секунды?)', time_arr[t + 1]):
                 available_time_arr.append([time_arr[t], time_arr[t + 1]])
                 offset = offset + 2
+                continue
 
             elif re.search('(^час$|^часик$)', time_arr[t]):
                 available_time_arr.append([1, time_arr[t]])
                 offset = offset + 1
+                continue
 
             elif re.search('(^полчаса$|^полчасика$)', time_arr[t]):
                 available_time_arr.append([30, time_arr[t]])
                 offset = offset + 1
+                continue
+
+            if time_arr[t] == 'и' or time_arr[t] == ',':
+                offset = offset + 1
+                continue
+
+            check_exit = check_exit + 1
+
+            if check_exit > 1:
+                break
 
         if len(available_time_arr) != 0:
             (new_dt, err) = self.parse_and_added_time(c_dt, available_time_arr)
@@ -668,28 +688,26 @@ class TomorrowHandler(Handler):
 
 
 class ExactHandler(Handler):
+
+    def __init__(self):
+        super().__init__()
+        self.pattern_month = '(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)'
+        self.pattern_year = '(год[ау]?)'
+        self.pattern_year_int = '(\d\d|\d\d\d\d)'
+
     def handle(self, msg_arr, c_dt):
+        new_dt = c_dt
+        new_msg_arr = msg_arr[:]
+        err = ''
 
         if c_dt is None:
             c_dt = datetime.datetime.now()
 
-        # day = int(msg_arr[0])
-        # month = time_data['month'][msg_arr[1]]
-        #
-        # new_date = datetime.date(
-        #     day=day,
-        #     month=month,
-        #     year=datetime.datetime.now().year
-        # )
-        # new_time = datetime.time(0, 0, 0)
-        #
-        # new_dt = datetime.datetime.combine(new_date, new_time)
-        pattern_month = '(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)'
-        
         if re.search('^\d\d?.\d\d?.(\d\d|\d\d\d\d)$', msg_arr[0]):
             (new_dt, new_msg_arr, err) = self.parse_absolute_times_from_slice(msg_arr, c_dt)
 
-        elif re.search('\d\d?', msg_arr[0]) and re.search('')
+        elif re.search('\d\d?', msg_arr[0]) and re.search(self.pattern_month, msg_arr[1]):
+            (new_dt, new_msg_arr, err) = self.parse_times_from_slice(msg_arr, c_dt)
 
         return (
             new_dt,
@@ -703,7 +721,82 @@ class ExactHandler(Handler):
         return (re.search('\d\d?(ого)?', val[0]) and re.search(pattern_month, val[1])) or re.search('^\d\d?.\d\d?.(\d\d|\d\d\d\d)$', val[0])
 
     def parse_times_from_slice(self, msg, ct):
-        pass
+        offset = 0
+        date_arr = msg[:]
+        available_date_arr = []
+        new_current_datetime = None
+        err = ''
+        check_exit = 0
+
+        for d in range(len(date_arr)):
+
+            if re.search('\d\d?', date_arr[d]) and re.search(self.pattern_month, date_arr[d + 1]):
+                available_date_arr.append([date_arr[d], date_arr[d + 1]])
+                offset = offset + 2
+                check_exit = 0
+                continue
+
+            elif re.search(self.pattern_year_int, date_arr[d]) and re.search(self.pattern_year, date_arr[d + 1]):
+                available_date_arr.append([date_arr[d], date_arr[d + 1]])  # todo добавить год year
+                offset = offset + 2
+                check_exit = 0
+                pass
+
+            if date_arr[d] == 'и' or date_arr[d] == ',':
+                offset = offset + 1
+                continue
+
+            check_exit = check_exit + 1
+
+            if check_exit > 1:
+                break
+
+        if len(available_date_arr) != 0:
+            (dd, mm, yy, err) = self.parse_date(available_date_arr)
+            new_date = datetime.date(
+                day=int(dd),
+                month=int(mm),
+                year=int(yy)
+            )
+
+            new_dt = datetime.datetime.combine(new_date, ct.time())
+
+            check_date = Handler.check_date(new_dt)
+
+            if check_date is not True:
+                (err) = check_date  # вывод ошибки если указанное время меньше текущего
+
+        return (
+            new_dt,
+            msg[offset:],
+            err
+        )
+
+    def parse_date(self, available_date_arr):
+        dd = 0
+        mm = 0
+        yy = 0
+        err = ''
+
+        for d in available_date_arr:
+            if re.search('\d\d?', d[0]) and re.search(self.pattern_month, d[1]):
+                dd = d[0]
+                mm = time_data['month'][d[1]]
+                continue
+
+            elif re.search(self.pattern_year_int, d[0]) and re.search(self.pattern_year, d[1]):
+                yy = d[0]
+
+                if len(yy) == 2:
+                    yy = '20' + yy
+                continue
+
+        return (
+            dd,
+            mm,
+            yy,
+            err
+        )
 
     def parse_absolute_times_from_slice(self, msg, ct):
         offset = 1
@@ -782,18 +875,20 @@ class Reminder:
         if re.search(remind_word, msg.lower()):
 
             if re.search('^что\s', msg[len(remind_word):].strip()):
-                self.msg_arr = msg[(len(remind_word) + 5):].strip().split(' ')
+                new_msg_arr = msg[(len(remind_word) + 5):].strip().split(' ')
+
             else:
-                self.msg_arr = msg[len(remind_word):].strip().split(' ')
+                new_msg_arr = msg[len(remind_word):].strip().split(' ')
 
         else:
-            self.msg_arr = ''
+            new_msg_arr = ''
+
+        return new_msg_arr
 
     def start(self):
-        self.parse_command()
-        # self.msg_arr_slice = self.msg_arr
+        self.msg_arr = self.parse_command()
+
         is_check = True
-        updates_tick = 1
 
         while is_check:
             if not self.msg_arr:
@@ -820,35 +915,8 @@ class Reminder:
             if not is_handled:
                 break
 
-            sleep(1)
-
-
-        # while is_check:
-        #
-        #     for handle in self.handlers:
-        #
-        #         # updates_tick = updates_tick + 1
-        #         if handle.is_match(val=self.msg_arr):
-        #
-        #             (new_current_time, new_msg_slice, err) = handle.handle(self.msg_arr, self.time)
-        #
-        #             if len(err) != 0:
-        #                 print(err)
-        #                 is_check = False
-        #                 break
-        #
-        #             self.msg_arr = new_msg_slice
-        #             self.time = new_current_time
-        #
-        #             # updates_tick = 1
-        #
-        #         elif (len(self.msg_arr) == 0) or (len(self.handlers) < updates_tick):
-        #             is_check = False
-
-            # sleep(1)
-
         self.remind_msg = self.msg_arr
 
-        print(self.remind_msg)
-        print('Reminder time: ', self.time)
+        print('Сообщение: ', self.remind_msg)
+        print('Время: ', self.time)
         print('Done')
