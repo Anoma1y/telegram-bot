@@ -881,12 +881,15 @@ class Reminder:
                 new_msg_arr = msg[len(remind_word):].strip().split(' ')
 
         else:
-            new_msg_arr = ''
+            new_msg_arr = False
 
         return new_msg_arr
 
     def start(self):
         self.msg_arr = self.parse_command()
+
+        if self.msg_arr is False:
+            return False
 
         is_check = True
 
@@ -917,6 +920,7 @@ class Reminder:
 
         self.remind_msg = self.msg_arr
 
-        print('Сообщение: ', self.remind_msg)
-        print('Время: ', self.time)
-        print('Done')
+        return (
+            self.remind_msg,
+            self.time
+        )
