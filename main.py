@@ -14,7 +14,11 @@ from time import *
 from db import Queries
 
 query = Queries()
-query.insert_remind(23123123, 'hell', 'now()')
+# query.insert_remind(14221214234234, 'hell', 'now()')
+# print(query.get_remind())
+# print(query.get_remind_single(12))
+print(query.get_remind_upcoming())
+
 
 # db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 

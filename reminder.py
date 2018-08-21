@@ -924,3 +924,18 @@ class Reminder:
             self.remind_msg,
             self.time
         )
+
+    # if len(args) == 1:
+    #     result.execute(sql, (args[0],))
+    #
+    # elif len(args) == 2:
+    #     result.execute(sql, (args[0], args[1],))
+    #
+    # elif len(args) == 3:
+    #     result.execute(sql, (args[0], args[1], args[2],))
+    #
+    # elif len(args) == 4:
+    #     result.execute(sql, (args[0], args[1], args[2], args[3],))
+    #
+    # elif len(args) == 5:
+    #     result.execute(sql, (args[0], args[1], args[2], args[3], args[4]))

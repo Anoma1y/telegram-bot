@@ -17,51 +17,51 @@ class DB:
         self.db.close()
 
     def select(self, sql):
-        cur = self.db.cursor()
-        cur.execute(sql)
-        rows = cur.fetchall()
+        result = self.db.cursor()
+        result.execute(sql)
+        rows = result.fetchall()
         self.db.close()
         return rows
 
     def insert(self, sql, *args):
-        cur = self.db.cursor()
+        result = self.db.cursor()
         id = None
 
-        if len(args) == 1:
-            cur.execute(sql, (args[0],))
-
-        elif len(args) == 2:
-            cur.execute(sql, (args[0], args[1],))
-
-        elif len(args) == 3:
-            cur.execute(sql, (args[0], args[1], args[2],))
-
-        elif len(args) == 4:
-            cur.execute(sql, (args[0], args[1], args[2], args[3],))
-
-        elif len(args) == 5:
-            cur.execute(sql, (args[0], args[1], args[2], args[3], args[4]))
+        result.execute(sql, tuple(args))
 
         if "RETURNING" in sql:
-            id = cur.fetchone()[0]
+            id = result.fetchone()[0]
 
         self.db.commit()
-        cur.close()
+        result.close()
         return id
 
-    def remove(self):
-        pass
-
     def update(self, sql):
-        cur = self.db.cursor()
-        cur.execute(sql)
+        result = self.db.cursor()
+        result.execute(sql)
         self.db.commit()
         self.db.close()
 
 
 class Queries(DB):
-    def get_remind(self):
-        sql = 'SELECT message FROM reminder'
+    def get_remind_list(self):
+        sql = 'SELECT * FROM reminder'
+        result = self.select(sql)
+        return result
+
+    def get_remind_single(self, id=None):
+
+        if id is None:
+            return False
+
+        sql = "SELECT * FROM reminder WHERE id = {id}".format(
+            id=id
+        )
+        result = self.select(sql)
+        return result
+
+    def get_remind_upcoming(self):
+        sql = "SELECT id FROM reminder WHERE is_notify = FALSE AND notify_at BETWEEN now() and now() + INTERVAL '10 MINUTES'"
         result = self.select(sql)
         return result
 
@@ -70,7 +70,7 @@ class Queries(DB):
 
         try:
             reminder_id = self.insert(sql, user_id, msg, time)
-            print(reminder_id)
+            return reminder_id
 
         except psycopg2.DatabaseError as e:
             if self.db:
