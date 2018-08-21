@@ -11,6 +11,10 @@ import config as CONFIG
 import datetime
 from calendar import monthrange
 from time import *
+from db import Queries
+
+query = Queries()
+query.insert_remind(23123123, 'hell', 'now()')
 
 # db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 
