@@ -1,4 +1,3 @@
-# import postgresql
 import psycopg2
 import config
 
