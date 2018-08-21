@@ -420,7 +420,7 @@ class AtHandler(Handler):
         except Exception:
             return (
                 0,
-                err
+                'Неверно указан модификатор времени и значение часа'
             )
 
     def parse_absolute_times_from_slice(self, msg, ct):
@@ -892,10 +892,13 @@ class Reminder:
             return False
 
         is_check = True
+        iteration_count = 0
 
         while is_check:
-            if not self.msg_arr:
+            if (not self.msg_arr) or iteration_count > 50:
                 break
+
+            iteration_count = iteration_count + 1
 
             is_handled = False
             for handle in self.handlers:
@@ -907,35 +910,22 @@ class Reminder:
                         break
 
                     if err:
-                        print(err)
-                        is_check = False
-                        break
+                        raise Exception(err)
 
                     self.msg_arr = new_msg_slice
                     self.time = new_current_time
                     is_handled = True
+
 
             if not is_handled:
                 break
 
         self.remind_msg = self.msg_arr
 
+        if len(self.remind_msg) == 0 or self.time is None:
+            raise Exception('Ошибка')
+
         return (
             self.remind_msg,
             self.time
         )
-
-    # if len(args) == 1:
-    #     result.execute(sql, (args[0],))
-    #
-    # elif len(args) == 2:
-    #     result.execute(sql, (args[0], args[1],))
-    #
-    # elif len(args) == 3:
-    #     result.execute(sql, (args[0], args[1], args[2],))
-    #
-    # elif len(args) == 4:
-    #     result.execute(sql, (args[0], args[1], args[2], args[3],))
-    #
-    # elif len(args) == 5:
-    #     result.execute(sql, (args[0], args[1], args[2], args[3], args[4]))

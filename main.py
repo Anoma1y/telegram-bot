@@ -13,13 +13,6 @@ from calendar import monthrange
 from time import *
 from db import Queries
 
-query = Queries()
-# query.insert_remind(14221214234234, 'hell', 'now()')
-# print(query.get_remind())
-# print(query.get_remind_single(12))
-print(query.get_remind_upcoming())
-
-
 # db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 
 unix_time = {
@@ -100,6 +93,55 @@ def error():
     pass
 
 
+def check_reminder(msg):
+    remind_word = 'напомни мне'
+    msg = re.sub('\s+', ' ', msg)
+
+    if re.search(remind_word, msg.lower()) or re.search('^что\s', msg.strip()):
+        return True
+
+    return False
+
+
+def text_message(msg):
+    response = msg
+    if check_reminder(response):
+        try:
+            reminder = Reminder(msg=response)
+            (msg, time) = reminder.start()
+            print(msg)
+            print(time)
+            # query = Queries()
+            # query.insert_remind(update.message.chat_id, msg, time)
+            #
+            # print('Напоминание создано')
+        except Exception as err:
+            print(str(err))
+
+
+text_message('напомни мне завтра в 7 часов 35 минут вечера сходить на встречу')
+
+
+# def text_message(bot, update):
+#     response = update.message.text
+#     if check_reminder(response):
+#         try:
+#             reminder = Reminder(msg=response)
+#             (msg, time) = reminder.start()
+#             query = Queries()
+#             query.insert_remind(update.message.chat_id, msg, time)
+
+            # bot.send_message(chat_id=update.message.chat_id, text='Напоминание создано')
+        # except Exception as err:
+        #     bot.send_message(chat_id=update.message.chat_id, text=str(err))
+#
+
+
+# query = Queries()
+# query.insert_remind(14221214234234, 'hell', 'now()')
+# print(query.get_remind())
+# print(query.get_remind_single(12))
+# print(query.get_remind_upcoming())
 # reminder = Reminder(msg='напомни мне через 10 минут встреча с кем то там')
 # reminder = Reminder(msg='напомни мне сегодня в 18 часов и 35 минут встреча с кем то там и где то там')
 # (msg, time) = reminder.start()
