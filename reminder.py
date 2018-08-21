@@ -724,7 +724,6 @@ class ExactHandler(Handler):
         offset = 0
         date_arr = msg[:]
         available_date_arr = []
-        new_current_datetime = None
         err = ''
         check_exit = 0
 
@@ -753,6 +752,9 @@ class ExactHandler(Handler):
 
         if len(available_date_arr) != 0:
             (dd, mm, yy, err) = self.parse_date(available_date_arr)
+            if int(yy) == 0:
+                yy = datetime.datetime.now().date().year
+
             new_date = datetime.date(
                 day=int(dd),
                 month=int(mm),

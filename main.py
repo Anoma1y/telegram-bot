@@ -109,17 +109,19 @@ def text_message(msg):
         try:
             reminder = Reminder(msg=response)
             (msg, time) = reminder.start()
-            print(msg)
-            print(time)
-            # query = Queries()
-            # query.insert_remind(update.message.chat_id, msg, time)
-            #
-            # print('Напоминание создано')
+
+            query = Queries()
+            query.insert_remind(21012454, msg, time.strftime("%Y-%m-%d %H:%M:%S"))
+
+            print('Напоминание создано')
         except Exception as err:
-            print(str(err))
+            err = str(err)
+            print(err)
+    else:
+        print('Hi')
 
 
-text_message('напомни мне завтра в 7 часов 35 минут вечера сходить на встречу')
+text_message('напомни мне через 15 минут сходить на встречу')
 
 
 # def text_message(bot, update):
