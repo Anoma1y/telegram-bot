@@ -42,7 +42,7 @@ class DB:
         self.db.close()
 
 
-class Queries(DB):
+class ReminderQueries(DB):
     def get_remind_list(self):
         sql = 'SELECT * FROM reminder'
         result = self.select(sql)
@@ -79,3 +79,21 @@ class Queries(DB):
 
     def update_remind(self):
         pass
+
+
+class DictionaryQueries(DB):
+    def get_words_list(self, name=None, limit=10):
+        pass
+
+    def insert_word(self, english, russian):
+        sql = "INSERT INTO english_dictionary (word, word_translate) VALUES(%s, %s) RETURNING id"
+
+        try:
+            word_id = self.insert(sql, english.lower(), russian.lower())
+            return word_id
+
+        except psycopg2.DatabaseError:
+            if self.db:
+                self.db.rollback()
+
+            return 'Произошла ошибка'

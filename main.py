@@ -11,7 +11,7 @@ import config as CONFIG
 import datetime
 from calendar import monthrange
 from time import *
-from db import Queries
+from db import ReminderQueries, DictionaryQueries
 
 # db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
 
@@ -24,6 +24,8 @@ unix_time = {
     'year': 31556926
 }
 
+query = DictionaryQueries()
+query.insert_word('hi', 'привет')
 
 # invalid command
 def invalid_cmd(bot, update):
@@ -110,10 +112,15 @@ def text_message(bot, update):
     if check_reminder(response):
         try:
             reminder = Reminder(msg=response)
-            (msg, time) = reminder.start()
+            (msg, notify_at) = reminder.start()
+            notify_at.strftime("%Y-%m-%d %H:%M:%S")
 
-            query = Queries()
-            query.insert_remind(chat_id, msg, time.strftime("%Y-%m-%d %H:%M:%S"))
+            query = ReminderQueries()
+            query.insert_remind(
+                user_id=chat_id,
+                msg=msg,
+                time=notify_at
+            )
 
             bot.send_message(chat_id=chat_id, text='Напоминание создано')
         except Exception as err:
@@ -144,44 +151,44 @@ def text_message(bot, update):
 #     bot.send_message(chat_id=update.message.chat_id, text='Добавлено')
 
 
-updater = Updater(token=CONFIG.TOKEN)
-dispatcher = updater.dispatcher
-
-@run_async
-def starter(bot, update):
-    # print('Hui start')
-    while True:
-        pass
-        # get_emp_with_salary_lt = db.query("SELECT message FROM reminder WHERE notify_at > now()")
-
-        # print(get_emp_with_salary_lt)
-        # sleep(2)
-
-
-def main():
-    try:
-        text_message_handler = MessageHandler(Filters.text, text_message)
-        # start_command_handler = CommandHandler('start', starter)
-        tags_command_handler = CommandHandler('tags', send_tags)
-        image_command_handler = CommandHandler('image', send_album)
-        help_command_handler = CommandHandler('help', get_help_command_list)
-        # set_command_handler = CommandHandler('set', set_notification)
-        # dispatcher.add_handler(start_command_handler)
-        dispatcher.add_handler(tags_command_handler)
-        dispatcher.add_handler(image_command_handler)
-        dispatcher.add_handler(help_command_handler)
-        # dispatcher.add_handler(set_command_handler)
-        dispatcher.add_handler(text_message_handler)
-
-        updater.start_polling(clean=True)
-
-        updater.idle()
-    except Exception as e:
-        print("type error: " + str(e))
-
-
-if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        exit()
+# updater = Updater(token=CONFIG.TOKEN)
+# dispatcher = updater.dispatcher
+#
+# @run_async
+# def starter(bot, update):
+#     # print('Hui start')
+#     while True:
+#         pass
+#         # get_emp_with_salary_lt = db.query("SELECT message FROM reminder WHERE notify_at > now()")
+#
+#         # print(get_emp_with_salary_lt)
+#         # sleep(2)
+#
+#
+# def main():
+#     try:
+#         text_message_handler = MessageHandler(Filters.text, text_message)
+#         # start_command_handler = CommandHandler('start', starter)
+#         tags_command_handler = CommandHandler('tags', send_tags)
+#         image_command_handler = CommandHandler('image', send_album)
+#         help_command_handler = CommandHandler('help', get_help_command_list)
+#         # set_command_handler = CommandHandler('set', set_notification)
+#         # dispatcher.add_handler(start_command_handler)
+#         dispatcher.add_handler(tags_command_handler)
+#         dispatcher.add_handler(image_command_handler)
+#         dispatcher.add_handler(help_command_handler)
+#         # dispatcher.add_handler(set_command_handler)
+#         dispatcher.add_handler(text_message_handler)
+#
+#         updater.start_polling(clean=True)
+#
+#         updater.idle()
+#     except Exception as e:
+#         print("type error: " + str(e))
+#
+#
+# if __name__ == '__main__':
+#     try:
+#         main()
+#     except KeyboardInterrupt:
+#         exit()
