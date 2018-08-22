@@ -1,5 +1,5 @@
 from Db.dictionary import DictionaryQueries
-
+from re import search
 
 class Dictionary:
     def __init__(self, language="english"):
@@ -33,11 +33,15 @@ class Dictionary:
 
     def gen_translate(self, msg):
         msg = self.split_cmd(msg)
-        english = msg[0]
-        russian = ' '.join(msg[1:])
+        english = msg[0].lower()
+        russian = ' '.join(msg[1:]).lower()
 
-        self.word = english
-        self.translate = russian
+        if search('^[a-z\s]+$', english) and search('^[а-я\s,]+$', russian):
+            self.word = english
+            self.translate = russian
+            return True
+
+        return False
 
     def get_by_word(self, word):
         query = DictionaryQueries()
@@ -57,7 +61,13 @@ class Dictionary:
         return response
 
     def insert(self, msg):
-        self.gen_translate(msg)
+        parse = self.gen_translate(msg)
+
+        if parse is False:
+            return {
+                'status': False,
+                'data': 'Ошибка'
+            }
 
         query = DictionaryQueries()
         response = query.insert_word(
