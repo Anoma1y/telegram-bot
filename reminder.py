@@ -1,6 +1,6 @@
 import re
 import datetime
-from time import sleep
+from db import ReminderQueries
 from calendar import monthrange
 
 time_data = {

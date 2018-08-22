@@ -4,16 +4,11 @@
 import telegram
 import re
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
-# import postgresql
 import yandere
 from reminder import Reminder
 import config as CONFIG
-import datetime
-from calendar import monthrange
-from time import *
-from db import ReminderQueries, DictionaryQueries
-
-# db = postgresql.open('pq://' + CONFIG.DB_USERNAME + ':' + CONFIG.DB_PASSWORD + '@' + CONFIG.DB_HOST + ':' + str(CONFIG.DB_PORT) + '/' + CONFIG.DB_NAME)
+from db import DictionaryQueries, ReminderQueries
+from dictionary import Dictionary
 
 unix_time = {
     'minute': 60,
@@ -24,8 +19,6 @@ unix_time = {
     'year': 31556926
 }
 
-query = DictionaryQueries()
-query.insert_word('hi', 'привет')
 
 # invalid command
 def invalid_cmd(bot, update):
@@ -106,53 +99,85 @@ def check_reminder(msg):
 
 
 def text_message(bot, update):
-    response = update.message.text
+    text = update.message.text
     chat_id = update.message.chat_id
 
-    if check_reminder(response):
+    if check_reminder(text):
         try:
-            reminder = Reminder(msg=response)
+            reminder = Reminder(msg=text)
             (msg, notify_at) = reminder.start()
             notify_at.strftime("%Y-%m-%d %H:%M:%S")
 
             query = ReminderQueries()
-            query.insert_remind(
+            response = query.insert_remind(
                 user_id=chat_id,
                 msg=msg,
                 time=notify_at
             )
 
-            bot.send_message(chat_id=chat_id, text='Напоминание создано')
+            if response['status']:
+                bot.send_message(chat_id=chat_id, text="Напоминание '{message}' создано".format(
+                    message=response['data'][2]
+                ))
+            else:
+                bot.send_message(chat_id=chat_id, text=response['data'])
+
         except Exception as err:
             err = str(err)
             bot.send_message(chat_id=chat_id, text=err)
 
     else:
-        bot.send_message(chat_id=chat_id, text=response)
-
-# query = Queries()
-# query.insert_remind(14221214234234, 'hell', 'now()')
-# print(query.get_remind())
-# print(query.get_remind_single(12))
-# print(query.get_remind_upcoming())
-# reminder = Reminder(msg='напомни мне через 10 минут встреча с кем то там')
-# reminder = Reminder(msg='напомни мне сегодня в 18 часов и 35 минут встреча с кем то там и где то там')
-# (msg, time) = reminder.start()
-# print(msg, time)
-
-# def text_message(bot, update):
-#     response = 'Получил Ваше сообщение: ' + update.message.text
-#     bot.send_message(chat_id=update.message.chat_id, text=response)
+        bot.send_message(chat_id=chat_id, text=text)
 
 
-# def set_notification(bot, update):
-#     ins = db.prepare("INSERT INTO reminder (user_id, creator_id, message, notify_at) VALUES (1, 2, '1', 'now()')")
-#
-#     bot.send_message(chat_id=update.message.chat_id, text='Добавлено')
+def add_word(bot, update):
+    text = update.message.text
+    chat_id = update.message.chat_id
+
+    dict = Dictionary(language='english')
+    response = dict.insert(text)
+
+    if response['status']:
+        bot.send_message(chat_id=chat_id, text='Слово {response_text} успешно добавлено'.format(
+            response_text=response['data'][1]
+        ))
+    else:
+        bot.send_message(chat_id=chat_id, text=response['data'])
 
 
-# updater = Updater(token=CONFIG.TOKEN)
-# dispatcher = updater.dispatcher
+updater = Updater(token=CONFIG.TOKEN)
+dispatcher = updater.dispatcher
+
+
+def main():
+    try:
+        text_message_handler = MessageHandler(Filters.text, text_message)
+        # start_command_handler = CommandHandler('start', starter)
+        tags_command_handler = CommandHandler('tags', send_tags)
+        image_command_handler = CommandHandler('image', send_album)
+        help_command_handler = CommandHandler('help', get_help_command_list)
+        addword_command_handler = CommandHandler('addword', add_word)
+        # set_command_handler = CommandHandler('set', set_notification)
+        # dispatcher.add_handler(start_command_handler)
+        dispatcher.add_handler(tags_command_handler)
+        dispatcher.add_handler(image_command_handler)
+        dispatcher.add_handler(help_command_handler)
+        dispatcher.add_handler(addword_command_handler)
+        # dispatcher.add_handler(set_command_handler)
+        dispatcher.add_handler(text_message_handler)
+
+        updater.start_polling(clean=True)
+
+        updater.idle()
+    except Exception as e:
+        print("type error: " + str(e))
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        exit()
 #
 # @run_async
 # def starter(bot, update):
@@ -165,30 +190,3 @@ def text_message(bot, update):
 #         # sleep(2)
 #
 #
-# def main():
-#     try:
-#         text_message_handler = MessageHandler(Filters.text, text_message)
-#         # start_command_handler = CommandHandler('start', starter)
-#         tags_command_handler = CommandHandler('tags', send_tags)
-#         image_command_handler = CommandHandler('image', send_album)
-#         help_command_handler = CommandHandler('help', get_help_command_list)
-#         # set_command_handler = CommandHandler('set', set_notification)
-#         # dispatcher.add_handler(start_command_handler)
-#         dispatcher.add_handler(tags_command_handler)
-#         dispatcher.add_handler(image_command_handler)
-#         dispatcher.add_handler(help_command_handler)
-#         # dispatcher.add_handler(set_command_handler)
-#         dispatcher.add_handler(text_message_handler)
-#
-#         updater.start_polling(clean=True)
-#
-#         updater.idle()
-#     except Exception as e:
-#         print("type error: " + str(e))
-#
-#
-# if __name__ == '__main__':
-#     try:
-#         main()
-#     except KeyboardInterrupt:
-#         exit()

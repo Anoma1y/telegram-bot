@@ -24,16 +24,15 @@ class DB:
 
     def insert(self, sql, *args):
         result = self.db.cursor()
-        id = None
-
         result.execute(sql, tuple(args))
+        response = None
 
         if "RETURNING" in sql:
-            id = result.fetchone()[0]
+            response = result.fetchone()
 
         self.db.commit()
         result.close()
-        return id
+        return response
 
     def update(self, sql):
         result = self.db.cursor()
@@ -65,35 +64,72 @@ class ReminderQueries(DB):
         return result
 
     def insert_remind(self, user_id, msg, time):
-        sql = "INSERT INTO reminder (user_id, message, notify_at) VALUES(%s, %s, %s) RETURNING id"
+        sql = "INSERT INTO reminder (user_id, message, notify_at) VALUES(%s, %s, %s) RETURNING *"
 
         try:
-            reminder_id = self.insert(sql, user_id, msg, time)
-            return reminder_id
+            response = self.insert(sql, user_id, msg, time)
+            return {
+                'status': True,
+                'data': response
+            }
 
-        except psycopg2.DatabaseError as e:
+        except psycopg2.DatabaseError:
             if self.db:
                 self.db.rollback()
 
-            print('Error %s' % e)
+            return {
+                'status': False,
+                'data': 'Произошла ошибка при добавлении нового оповещения'
+            }
 
     def update_remind(self):
         pass
 
 
 class DictionaryQueries(DB):
-    def get_words_list(self, name=None, limit=10):
-        pass
+    def get_words_list(self, language, word, limit):
+        sql = "SELECT * FROM {language}_dictionary WHERE word LIKE '%{word}%' LIMIT {limit}".format(
+            language=language,
+            word=word,
+            limit=limit
+        )
+        result = self.select(sql)
+        return result
 
-    def insert_word(self, english, russian):
-        sql = "INSERT INTO english_dictionary (word, word_translate) VALUES(%s, %s) RETURNING id"
+    def get_word_by_word_translate(self, language, word_translate):
+        sql = "SELECT * FROM {language}_dictionary WHERE word_translate = '{word_translate}'".format(
+            language=language,
+            word_translate=word_translate
+        )
+        result = self.select(sql)
+        return result
+
+    def get_word_by_word(self, language, word):
+        sql = "SELECT * FROM {language}_dictionary WHERE word = '{word}'".format(
+            language=language,
+            word=word
+        )
+        result = self.select(sql)
+        return result
+
+    def insert_word(self, language, word, word_translate):
+        sql = "INSERT INTO {language}_dictionary (word, word_translate) VALUES(%s, %s) RETURNING *".format(
+            language=language
+        )
 
         try:
-            word_id = self.insert(sql, english.lower(), russian.lower())
-            return word_id
+            response = self.insert(sql, word.lower(), word_translate.lower())
+
+            return {
+                'status': True,
+                'data': response
+            }
 
         except psycopg2.DatabaseError:
             if self.db:
                 self.db.rollback()
 
-            return 'Произошла ошибка'
+            return {
+                'status': False,
+                'data': 'Произошла ошибка при добавлении нового слова'
+            }
