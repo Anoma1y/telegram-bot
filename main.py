@@ -7,6 +7,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_a
 import yandere
 from reminder import Reminder
 import config as CONFIG
+from time import sleep
 from db import DictionaryQueries, ReminderQueries
 from dictionary import Dictionary
 
@@ -98,6 +99,7 @@ def check_reminder(msg):
     return False
 
 
+@run_async
 def text_message(bot, update):
     text = update.message.text
     chat_id = update.message.chat_id
@@ -130,6 +132,7 @@ def text_message(bot, update):
         bot.send_message(chat_id=chat_id, text=text)
 
 
+@run_async
 def add_word(bot, update):
     text = update.message.text
     chat_id = update.message.chat_id
@@ -149,8 +152,28 @@ updater = Updater(token=CONFIG.TOKEN)
 dispatcher = updater.dispatcher
 
 
+class Bot:
+
+    def __init__(self):
+        self.is_started = True
+
+    @run_async
+    def start(self):
+        self.is_started = True
+        while self.is_started:
+            print(123)
+            sleep(2)
+        return
+
+    def stop(self):
+        self.is_started = False
+        return
+
+
 def main():
     try:
+        bot = Bot()
+        bot.start()
         text_message_handler = MessageHandler(Filters.text, text_message)
         # start_command_handler = CommandHandler('start', starter)
         tags_command_handler = CommandHandler('tags', send_tags)
