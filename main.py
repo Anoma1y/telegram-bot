@@ -5,6 +5,7 @@ import re
 import config as CONFIG
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
 from time import sleep
+from datetime import datetime
 from Modules import yandere
 from Modules.reminder import Reminder
 from Modules.dictionary import Dictionary
@@ -151,7 +152,7 @@ updater = Updater(token=CONFIG.TOKEN)
 dispatcher = updater.dispatcher
 
 
-class Bot:
+class Ping:
 
     def __init__(self):
         self.is_started = True
@@ -162,18 +163,39 @@ class Bot:
         while self.is_started:
             query = ReminderQueries()
             response = query.get_remind_upcoming()
+            if len(response) > 0:
+                self.handle_reminder(response)
 
-            sleep(10)
+            sleep(20)
         return
 
     def stop(self):
         self.is_started = False
         return
 
+    def handle_reminder(self, notifies):
+        for notify in notifies:
+            notify_id = notify[0]
+            user_id = notify[1]
+            message = notify[2]
+            notify_at = notify[3]
+            c_t = datetime.now()
+            delta = notify_at - c_t
+            minutes = (delta.seconds % 3600) // 60
+
+            query = ReminderQueries()
+            query.update_remind(notify_id)  # todo сделать проверку: если оповещение в порядке убывания времени и отключать по достижению определенного кол-ва
+
+            text_remind = ''
+            text_remind += 'Напоминание: {message}\n'.format(message=message)
+            text_remind += 'Время: через {minutes} минут'.format(minutes=minutes)
+
+            dispatcher.bot.sendMessage(chat_id=user_id, text=text_remind)
+
 
 def main():
     try:
-        bot = Bot()
+        bot = Ping()
         bot.start()
         text_message_handler = MessageHandler(Filters.text, text_message)
         tags_command_handler = CommandHandler('tags', send_tags)

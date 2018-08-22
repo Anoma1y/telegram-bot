@@ -34,8 +34,8 @@ class DB:
         result.close()
         return response
 
-    def update(self, sql):
+    def update(self, sql, *args):
         result = self.db.cursor()
-        result.execute(sql)
+        result.execute(sql, tuple(args))
         self.db.commit()
         self.db.close()
