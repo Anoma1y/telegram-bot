@@ -1,15 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import telegram
 import re
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
-import yandere
-from reminder import Reminder
 import config as CONFIG
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
 from time import sleep
-from db import DictionaryQueries, ReminderQueries
-from dictionary import Dictionary
+from Modules import yandere
+from Modules.reminder import Reminder
+from Modules.dictionary import Dictionary
+from Db.reminder import ReminderQueries
 
 unix_time = {
     'minute': 60,
@@ -161,8 +160,10 @@ class Bot:
     def start(self):
         self.is_started = True
         while self.is_started:
-            print(123)
-            sleep(2)
+            query = ReminderQueries()
+            response = query.get_remind_upcoming()
+
+            sleep(10)
         return
 
     def stop(self):
@@ -175,18 +176,15 @@ def main():
         bot = Bot()
         bot.start()
         text_message_handler = MessageHandler(Filters.text, text_message)
-        # start_command_handler = CommandHandler('start', starter)
         tags_command_handler = CommandHandler('tags', send_tags)
         image_command_handler = CommandHandler('image', send_album)
         help_command_handler = CommandHandler('help', get_help_command_list)
         addword_command_handler = CommandHandler('addword', add_word)
-        # set_command_handler = CommandHandler('set', set_notification)
-        # dispatcher.add_handler(start_command_handler)
+
         dispatcher.add_handler(tags_command_handler)
         dispatcher.add_handler(image_command_handler)
         dispatcher.add_handler(help_command_handler)
         dispatcher.add_handler(addword_command_handler)
-        # dispatcher.add_handler(set_command_handler)
         dispatcher.add_handler(text_message_handler)
 
         updater.start_polling(clean=True)
@@ -201,15 +199,3 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         exit()
-#
-# @run_async
-# def starter(bot, update):
-#     # print('Hui start')
-#     while True:
-#         pass
-#         # get_emp_with_salary_lt = db.query("SELECT message FROM reminder WHERE notify_at > now()")
-#
-#         # print(get_emp_with_salary_lt)
-#         # sleep(2)
-#
-#

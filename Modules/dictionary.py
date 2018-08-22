@@ -1,4 +1,4 @@
-from db import DictionaryQueries
+from Db.dictionary import DictionaryQueries
 
 
 class Dictionary:
