@@ -1,15 +1,15 @@
 import psycopg2
-import config
+import config as CONFIG
 
 
 class DB:
     def __init__(self):
         self.db = psycopg2.connect(
-            host=config.DB_HOST,
-            user=config.DB_USERNAME,
-            password=config.DB_PASSWORD,
-            database=config.DB_NAME,
-            port=config.DB_PORT
+            host=CONFIG.DB_HOST,
+            user=CONFIG.DB_USERNAME,
+            password=CONFIG.DB_PASSWORD,
+            database=CONFIG.DB_NAME,
+            port=CONFIG.DB_PORT
         )
 
     def close(self):

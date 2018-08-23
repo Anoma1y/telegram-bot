@@ -38,19 +38,6 @@ def get_help_command_list(bot, update):
     bot.sendMessage(chat_id=update.message.chat_id, text=help_doc)
 
 
-def handle_cmd(command, chat_id):
-    main_command = command.split(' ', maxsplit=1)[0]
-
-    if main_command == '/image':
-        send_album(chat_id, command)
-    elif main_command == '/tags':
-        send_tags(chat_id)
-    elif main_command == '/help':
-        get_help_command_list(chat_id)
-    else:
-        invalid_cmd(chat_id, main_command)
-
-
 def get_params_cmd(update):
     cmd = update.message.text.split(' ', maxsplit=1)
 
