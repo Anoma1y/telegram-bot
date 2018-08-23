@@ -3,14 +3,8 @@ import config
 
 
 class DB:
-    def __init__(selfzz):
-        self.db = psycopg2.connect(
-            host=config.DB_HOST,
-            user=config.DB_USERNAME,
-            password=config.DB_PASSWORD,
-            database=config.DB_NAME,
-            port=config.DB_PORT
-        )
+    def __init__(self, db):
+        self.db = db
 
     def close(self):
         self.db.close()
@@ -19,7 +13,7 @@ class DB:
         result = self.db.cursor()
         result.execute(sql)
         rows = result.fetchall()
-        self.db.close()
+        # self.db.close()
         return rows
 
     def insert(self, sql, *args):
@@ -31,11 +25,11 @@ class DB:
             response = result.fetchone()
 
         self.db.commit()
-        result.close()
+        # result.close()
         return response
 
     def update(self, sql, *args):
         result = self.db.cursor()
         result.execute(sql, tuple(args))
         self.db.commit()
-        self.db.close()
+        # self.db.close()

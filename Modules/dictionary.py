@@ -3,10 +3,11 @@ from re import search
 
 
 class Dictionary:
-    def __init__(self, language="english"):
+    def __init__(self, db, language="english"):
         self._language = language
         self._word = ''
         self._translate = ''
+        self.DB_CONNECT = db
 
     @property
     def language(self):
@@ -45,7 +46,7 @@ class Dictionary:
         return False
 
     def get_by_word(self, word):
-        query = DictionaryQueries()
+        query = DictionaryQueries(self.DB_CONNECT)
         response = query.get_word_by_word(
             language=self.language,
             word=word
@@ -53,7 +54,7 @@ class Dictionary:
         return response
 
     def get_list(self, word='', limit=10):
-        query = DictionaryQueries()
+        query = DictionaryQueries(self.DB_CONNECT)
         response = query.get_words_list(
             language=self.language,
             word=word,
@@ -70,7 +71,7 @@ class Dictionary:
                 'data': 'Ошибка'
             }
 
-        query = DictionaryQueries()
+        query = DictionaryQueries(self.DB_CONNECT)
         response = query.insert_word(
             language=self.language,
             word=self.word,

@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 import re
 import config as CONFIG
+import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
 from time import sleep
 from datetime import datetime
@@ -10,6 +10,7 @@ from Modules import yandere
 from Modules.reminder import Reminder
 from Modules.dictionary import Dictionary
 from Db.reminder import ReminderQueries
+import psycopg2
 
 unix_time = {
     'minute': 60,
@@ -19,6 +20,14 @@ unix_time = {
     'month': 2629743,
     'year': 31556926
 }
+
+DB_CONNECT = psycopg2.connect(
+    host=CONFIG.DB_HOST,
+    user=CONFIG.DB_USERNAME,
+    password=CONFIG.DB_PASSWORD,
+    database=CONFIG.DB_NAME,
+    port=CONFIG.DB_PORT
+)
 
 
 # invalid command
@@ -93,7 +102,7 @@ def text_message(bot, update):
             (msg, notify_at) = reminder.start()
             notify_at.strftime("%Y-%m-%d %H:%M:%S")
 
-            query = ReminderQueries()
+            query = ReminderQueries(db=DB_CONNECT)
             response = query.insert_remind(
                 user_id=chat_id,
                 msg=msg,
@@ -120,7 +129,7 @@ def add_word(bot, update):
     text = update.message.text
     chat_id = update.message.chat_id
 
-    dict = Dictionary(language='english')
+    dict = Dictionary(language='english', db=DB_CONNECT)
     response = dict.insert(text)
 
     if response['status']:
@@ -145,12 +154,13 @@ class Ping:
     def start(self):
         self.is_started = True
         while self.is_started:
-            query = ReminderQueries()
+            query = ReminderQueries(db=DB_CONNECT)
             response = query.get_remind_upcoming()
+
             if len(response) > 0:
                 self.handle_reminder(response)
 
-            sleep(20)
+            sleep(10)
         return
 
     def stop(self):
@@ -167,7 +177,7 @@ class Ping:
             delta = notify_at - c_t
             minutes = (delta.seconds % 3600) // 60
 
-            query = ReminderQueries()
+            query = ReminderQueries(db=DB_CONNECT)
             query.update_remind(notify_id)  # todo сделать проверку: если оповещение в порядке убывания времени и отключать по достижению определенного кол-ва
 
             text_remind = ''
@@ -181,6 +191,7 @@ def main():
     try:
         bot = Ping()
         bot.start()
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
         text_message_handler = MessageHandler(Filters.text, text_message)
         tags_command_handler = CommandHandler('tags', send_tags)
         image_command_handler = CommandHandler('image', send_album)

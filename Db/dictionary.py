@@ -3,6 +3,10 @@ from .db import DB
 
 
 class DictionaryQueries(DB):
+    def __init__(self, db):
+        self.db = db
+        super(DB, self).__init__()
+
     def get_words_list(self, language, word, limit):
         sql = "SELECT * FROM {language}_dictionary WHERE word LIKE '%{word}%' LIMIT {limit}".format(
             language=language,

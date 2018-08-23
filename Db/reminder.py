@@ -3,6 +3,10 @@ from .db import DB
 
 
 class ReminderQueries(DB):
+    def __init__(self, db):
+        self.db = db
+        super(DB, self).__init__()
+
     def get_remind_list(self):
         sql = 'SELECT * FROM reminder'
         result = self.select(sql)
