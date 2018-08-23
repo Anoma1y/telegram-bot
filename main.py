@@ -72,10 +72,6 @@ def send_tags(bot, update):
         bot.sendMessage(chat_id=update.message.chat_id, text='Теги не найдены')
 
 
-def error():
-    pass
-
-
 def check_reminder(msg):
     remind_word = 'напомни мне'
     msg = re.sub('\s+', ' ', msg)
@@ -131,6 +127,7 @@ def add_word(bot, update):
         bot.send_message(chat_id=chat_id, text='Слово {response_text} успешно добавлено'.format(
             response_text=response['data'][1]
         ))
+
     else:
         bot.send_message(chat_id=chat_id, text=response['data'])
 

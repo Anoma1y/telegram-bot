@@ -1,6 +1,7 @@
 from Db.dictionary import DictionaryQueries
 from re import search
 
+
 class Dictionary:
     def __init__(self, language="english"):
         self._language = language
