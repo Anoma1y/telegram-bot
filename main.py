@@ -30,19 +30,13 @@ DB_CONNECT = psycopg2.connect(
 )
 
 
-# invalid command
-def invalid_cmd(bot, update):
-    msg = 'Команда ' + update.message.text + ' не найдена\n'
-    msg += 'Для получения списка доступных команд, напишите /help'
-
-    bot.sendMessage(chat_id=update.message.chat_id, text=msg)
-
-
 # get command list
 def get_help_command_list(bot, update):
     help_doc = 'Список доступных команд:\n'
     help_doc += '\t\t/image {{имя тега}} - Получить последние картинки за 1 неделю, {{имя тега}} - картинки по тегу\n'
     help_doc += '\t\t/tags {{имя тега}} - Получить все популярные теги, {{имя тега}} - поиск по тегу\n'
+    help_doc += '\t\t/addword {{english}} {{russian}}- Добавить слово в словарик, ' \
+                '{{english}} - слово на английском, {{russian}} - перевод, через запятую\n'
     help_doc += '\t\t/help - Список команд\n'
     bot.sendMessage(chat_id=update.message.chat_id, text=help_doc)
 
@@ -113,6 +107,7 @@ def text_message(bot, update):
                 bot.send_message(chat_id=chat_id, text="Напоминание '{message}' создано".format(
                     message=response['data'][2]
                 ))
+
             else:
                 bot.send_message(chat_id=chat_id, text=response['data'])
 

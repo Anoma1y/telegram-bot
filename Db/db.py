@@ -1,7 +1,3 @@
-import psycopg2
-import config
-
-
 class DB:
     def __init__(self, db):
         self.db = db
@@ -13,7 +9,6 @@ class DB:
         result = self.db.cursor()
         result.execute(sql)
         rows = result.fetchall()
-        # self.db.close()
         return rows
 
     def insert(self, sql, *args):
@@ -25,11 +20,9 @@ class DB:
             response = result.fetchone()
 
         self.db.commit()
-        # result.close()
         return response
 
     def update(self, sql, *args):
         result = self.db.cursor()
         result.execute(sql, tuple(args))
         self.db.commit()
-        # self.db.close()

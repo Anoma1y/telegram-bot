@@ -35,15 +35,22 @@ class Dictionary:
 
     def gen_translate(self, msg):
         msg = self.split_cmd(msg)
-        english = msg[0].lower()
-        russian = ' '.join(msg[1:]).lower()
+        english = ''
+        russian = ''
 
-        if search('^[a-z\s]+$', english) and search('^[а-я\s,]+$', russian):
-            self.word = english
-            self.translate = russian
-            return True
+        for m in range(len(msg)):
+            if search('^[a-z\s]+$', msg[m]):
+                english += msg[m] + ' '
+            elif search('^[а-я\s,]+$', msg[m]):
+                russian += msg[m] + ' '
 
-        return False
+        if len(english) == 0 or len(russian) == 0:
+            return False
+
+        self.word = english.strip()
+        self.translate = russian.strip()
+
+        return True
 
     def get_by_word(self, word):
         query = DictionaryQueries(self.DB_CONNECT)
