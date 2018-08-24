@@ -22,6 +22,17 @@ class DB:
         self.db.commit()
         return response
 
+    def insert_arr(self, sql, args):
+        result = self.db.cursor()
+        result.execute(sql, args)
+        response = None
+
+        if "RETURNING" in sql:
+            response = result.fetchone()
+
+        self.db.commit()
+        return response
+
     def update(self, sql, *args):
         result = self.db.cursor()
         result.execute(sql, tuple(args))

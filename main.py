@@ -5,7 +5,8 @@ import config as CONFIG
 import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
 from time import sleep
-from datetime import datetime
+import calendar
+import datetime
 from Modules import yandere
 from Modules.reminder import Reminder
 from Modules.dictionary import Dictionary
@@ -21,6 +22,7 @@ unix_time = {
     'year': 31556926
 }
 
+
 DB_CONNECT = psycopg2.connect(
     host=CONFIG.DB_HOST,
     user=CONFIG.DB_USERNAME,
@@ -29,14 +31,35 @@ DB_CONNECT = psycopg2.connect(
     port=CONFIG.DB_PORT
 )
 
+ll = [
+    (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+    (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+    (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+    (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+]
+# cursor = DB_CONNECT.cursor()
+
+# # data = [(1,'x'), (2,'y')]
+# records_list_template = ','.join(['%s'] * len(ll))
+# insert_query = 'insert into pre_reminder (remind_id, notify_at) values {}'.format(records_list_template)
+# print(insert_query)
+# cursor.execute(insert_query, ll)
+
+#
+# args_str = ','.join(DB_CONNECT.cursor().mogrify("(%s, %s)", x) for x in ll)
+# print(args_str)
+#
+query = ReminderQueries(db=DB_CONNECT)
+query.insert_pre_reminder(ll)
+
 
 # get command list
 def get_help_command_list(bot, update):
     help_doc = 'Список доступных команд:\n'
-    help_doc += '\t\t/image {{имя тега}} - Получить последние картинки за 1 неделю, {{имя тега}} - картинки по тегу\n'
-    help_doc += '\t\t/tags {{имя тега}} - Получить все популярные теги, {{имя тега}} - поиск по тегу\n'
-    help_doc += '\t\t/addword {{english}} {{russian}}- Добавить слово в словарик, ' \
-                '{{english}} - слово на английском, {{russian}} - перевод, через запятую\n'
+    help_doc += '\t\t/image {имя тега} - Получить последние картинки за 1 неделю, {имя тега} - картинки по тегу\n'
+    help_doc += '\t\t/tags {имя тега} - Получить все популярные теги, {имя тега} - поиск по тегу\n'
+    help_doc += '\t\t/addword {english} {russian}- Добавить слово в словарик, ' \
+                '{english} - слово на английском, {russian} - перевод слова, через запятую\n'
     help_doc += '\t\t/help - Список команд\n'
     bot.sendMessage(chat_id=update.message.chat_id, text=help_doc)
 
@@ -136,8 +159,45 @@ def add_word(bot, update):
         bot.send_message(chat_id=chat_id, text=response['data'])
 
 
-updater = Updater(token=CONFIG.TOKEN)
-dispatcher = updater.dispatcher
+@run_async
+def get_word(bot, update):
+    pass
+
+
+# def kurwa(list):
+#     # print("INSERT INTO my_table (reminder_id, notify_at) VALUES {}".format(','.join(x for x in list)))
+#     el = ''
+#     for x in list:
+#         el += '('
+#         for y in x:
+#             el += str(y)
+#             el += ', '
+#         el += '), '
+#     # for i in range(len(list)):
+#     pass
+#     print(el)
+#     #
+#     # print(sql)
+
+# kurwa(ll)
+
+# updater = Updater(token=CONFIG.TOKEN)
+# dispatcher = updater.dispatcher
+#
+#
+# pre_remind = [10, 30, 60, 360, 1440, 2880, 10080, 21600, 43200]
+
+# notify_at = datetime.datetime.combine(date=datetime.date(2019, 5, 20), time=datetime.time(10, 5, 19))
+# notify_at = datetime.datetime.combine(date=datetime.date(2018, 8, 26), time=datetime.time(10, 5, 19))
+# notify_at = datetime.datetime.combine(date=datetime.date(2018, 8, 24), time=datetime.time(18, 5, 19))
+
+
+# c_t = datetime.datetime.now()
+
+# delta = notify_at - c_t
+# minutes = (delta.seconds % 3600) // 60
+#
+# print(delta.days)
 
 
 class Ping:
@@ -168,7 +228,7 @@ class Ping:
             user_id = notify[1]
             message = notify[2]
             notify_at = notify[3]
-            c_t = datetime.now()
+            c_t = datetime.datetime.now()
             delta = notify_at - c_t
             minutes = (delta.seconds % 3600) // 60
 
@@ -181,33 +241,58 @@ class Ping:
 
             dispatcher.bot.sendMessage(chat_id=user_id, text=text_remind)
 
+#
+# while True:
+#     query = ReminderQueries(db=DB_CONNECT)
+#     response = query.get_remind_upcoming()
+#     for notify in response:
+#         notify_id = notify[0]
+#         user_id = notify[1]
+#         message = notify[2]
+#         notify_at = notify[3]
+#         c_t = datetime.datetime.now()
+#         delta = notify_at - c_t
+        #
+        # month_days = calendar.monthrange(c_t.year, c_t.month)[1]
 
-def main():
-    try:
-        bot = Ping()
-        bot.start()
-        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-        text_message_handler = MessageHandler(Filters.text, text_message)
-        tags_command_handler = CommandHandler('tags', send_tags)
-        image_command_handler = CommandHandler('image', send_album)
-        help_command_handler = CommandHandler('help', get_help_command_list)
-        addword_command_handler = CommandHandler('addword', add_word)
+        # print(month_days)
+        # if delta.days == 30:
+        #     print('Осталось: ', delta.days ,' дней')
 
-        dispatcher.add_handler(tags_command_handler)
-        dispatcher.add_handler(image_command_handler)
-        dispatcher.add_handler(help_command_handler)
-        dispatcher.add_handler(addword_command_handler)
-        dispatcher.add_handler(text_message_handler)
+        # minutes = (delta.seconds % 3600) // 60
+        # print(delta)
 
-        updater.start_polling(clean=True)
-
-        updater.idle()
-    except Exception as e:
-        print("type error: " + str(e))
+    # sleep(5)
 
 
-if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        exit()
+#
+# def main():
+#     try:
+#         bot = Ping()
+#         bot.start()
+#         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+#         text_message_handler = MessageHandler(Filters.text, text_message)
+#         tags_command_handler = CommandHandler('tags', send_tags)
+#         image_command_handler = CommandHandler('image', send_album)
+#         help_command_handler = CommandHandler('help', get_help_command_list)
+#         addword_command_handler = CommandHandler('addword', add_word)
+#         getword_command_handler = CommandHandler('getword', get_word)
+#
+#         dispatcher.add_handler(tags_command_handler)
+#         dispatcher.add_handler(image_command_handler)
+#         dispatcher.add_handler(help_command_handler)
+#         dispatcher.add_handler(addword_command_handler)
+#         dispatcher.add_handler(text_message_handler)
+#
+#         updater.start_polling(clean=True)
+#
+#         updater.idle()
+#     except Exception as e:
+#         print("type error: " + str(e))
+#
+#
+# if __name__ == '__main__':
+#     try:
+#         main()
+#     except KeyboardInterrupt:
+#         exit()
