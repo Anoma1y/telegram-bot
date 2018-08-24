@@ -48,25 +48,18 @@ class ReminderQueries(DB):
                 'data': 'Произошла ошибка при добавлении нового оповещения'
             }
 
-
     def insert_pre_reminder(self, data):
-        records_list_template = ','.join(['%s'] * len(data))
-        insert_query = 'insert into pre_reminder (remind_id, notify_at) values {}'.format(records_list_template)
+        sql = 'INSERT INTO pre_reminder (remind_id, notify_at) VALUES {}'.format(','.join(['%s'] * len(data)))
 
-        self.insert_arr(insert_query, data)
-        # args_str = ','.join(cur.mogrify("(%s,%s)", x) for x in data)
-        # print(args_str)
-        # sql = '''INSERT INTO pre_reminder (remind_id, notify_at) VALUES (''' + ','.join(['%s' for x in data]) + ''')'''
-        # print(sql)
-        # try:
-        #     self.insert(sql, data)
-        #     print(123)
-        #
-        # except psycopg2.DatabaseError:
-        #     if self.db:
-        #         self.db.rollback()
-        #
-        #     print('err')
+        try:
+            self.insert_arr(sql, data)
+            print(123)
+
+        except psycopg2.DatabaseError:
+            if self.db:
+                self.db.rollback()
+
+            print('err')
 
 
     def update_remind(self, id):
