@@ -24,8 +24,12 @@ class ReminderQueries(DB):
         return result
 
     def get_remind_upcoming(self):
-        # sql = "SELECT id, user_id, message, notify_at FROM reminder WHERE is_notify = FALSE AND notify_at BETWEEN now() and now() + INTERVAL '10 MINUTES'"
-        sql = "SELECT id, user_id, message, notify_at FROM reminder WHERE is_notify = FALSE AND notify_at > now()"
+        sql = """
+            SELECT pre_reminder.id, reminder.user_id, reminder.message, pre_reminder.notify_at
+            FROM pre_reminder
+              JOIN reminder ON pre_reminder.remind_id = reminder.id
+            WHERE pre_reminder.is_sent = FALSE AND pre_reminder.notify_at BETWEEN now() and now() + INTERVAL '5 MINUTES'
+        """
         result = self.select(sql)
         return result
 
@@ -50,7 +54,7 @@ class ReminderQueries(DB):
 
     def insert_pre_reminder(self, data):
         sql = 'INSERT INTO pre_reminder (remind_id, notify_at) VALUES {} RETURNING id'.format(','.join(['%s'] * len(data)))
-        print(data)
+
         try:
             response = self.insert_arr(sql, data)
             return {
@@ -68,9 +72,8 @@ class ReminderQueries(DB):
             }
 
 
-    def update_remind(self, id):
-        sql = "UPDATE reminder SET is_notify = TRUE WHERE id = %s"
-
+    def update_pre_remind(self, id):
+        sql = "UPDATE pre_reminder SET is_sent = TRUE WHERE id = %s"
         try:
             self.update(sql, id)
 

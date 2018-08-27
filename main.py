@@ -31,19 +31,6 @@ DB_CONNECT = psycopg2.connect(
     port=CONFIG.DB_PORT
 )
 
-# cursor = DB_CONNECT.cursor()
-
-# # data = [(1,'x'), (2,'y')]
-# records_list_template = ','.join(['%s'] * len(ll))
-# insert_query = 'insert into pre_reminder (remind_id, notify_at) values {}'.format(records_list_template)
-# print(insert_query)
-# cursor.execute(insert_query, ll)
-
-#
-# args_str = ','.join(DB_CONNECT.cursor().mogrify("(%s, %s)", x) for x in ll)
-# print(args_str)
-#
-
 
 # get command list
 def get_help_command_list(bot, update):
@@ -127,6 +114,7 @@ def delta_time_to_minutes(d):
     return minutes
 
 
+# todo перенести в reminder.py
 def pre_reminder(remind_id, minutes):
     rem = []
     c_t = datetime.datetime.now()
@@ -138,11 +126,6 @@ def pre_reminder(remind_id, minutes):
             rem.append((remind_id, new_date))
 
     return rem
-
-# delta = delta_time(notify_at)
-# minutess = delta_time_to_minutes(delta)
-#
-# pre_reminder(1, minutess)
 
 
 @run_async
@@ -157,26 +140,29 @@ def text_message(bot, update):
             notify_at.strftime("%Y-%m-%d %H:%M:%S")
 
             query = ReminderQueries(db=DB_CONNECT)
-            response = query.insert_remind(
+            reminder_response = query.insert_remind(
                 user_id=chat_id,
                 msg=msg,
                 time=notify_at
             )
 
             delta = delta_time(notify_at)
-            minutess = delta_time_to_minutes(delta)
+            minutes = delta_time_to_minutes(delta)
 
-            pre_rem = pre_reminder(remind_id=response['data'][0], minutes=minutess)
+            pre_rem = pre_reminder(
+                remind_id=reminder_response['data'][0],
+                minutes=minutes
+            )
 
-            query.insert_pre_reminder(pre_rem)
+            pre_reminder_response = query.insert_pre_reminder(pre_rem)
 
-            if response['status']:
+            if reminder_response['status'] and pre_reminder_response['status']:
                 bot.send_message(chat_id=chat_id, text="Напоминание '{message}' создано".format(
-                    message=response['data'][2]
+                    message=reminder_response['data'][2]
                 ))
 
             else:
-                bot.send_message(chat_id=chat_id, text=response['data'])
+                bot.send_message(chat_id=chat_id, text=reminder_response['data'])
 
         except Exception as err:
             err = str(err)
@@ -208,41 +194,8 @@ def get_word(bot, update):
     pass
 
 
-# def kurwa(list):
-#     # print("INSERT INTO my_table (reminder_id, notify_at) VALUES {}".format(','.join(x for x in list)))
-#     el = ''
-#     for x in list:
-#         el += '('
-#         for y in x:
-#             el += str(y)
-#             el += ', '
-#         el += '), '
-#     # for i in range(len(list)):
-#     pass
-#     print(el)
-#     #
-#     # print(sql)
-
-# kurwa(ll)
-
 updater = Updater(token=CONFIG.TOKEN)
 dispatcher = updater.dispatcher
-#
-#
-
-
-# notify_at = datetime.datetime.combine(date=datetime.date(2019, 5, 20), time=datetime.time(10, 5, 19))
-# notify_at = datetime.datetime.combine(date=datetime.date(2018, 8, 26), time=datetime.time(10, 5, 19))
-# notify_at = datetime.datetime.combine(date=datetime.date(2018, 8, 29), time=datetime.time(19, 5, 19))
-#
-# ll = [
-#     (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-#     (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-#     (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-#     (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-# ]
-# query = ReminderQueries(db=DB_CONNECT)
-# print(query.insert_pre_reminder(ll))
 
 
 class Ping:
@@ -278,7 +231,7 @@ class Ping:
             minutes = (delta.seconds % 3600) // 60
 
             query = ReminderQueries(db=DB_CONNECT)
-            query.update_remind(notify_id)  # todo сделать проверку: если оповещение в порядке убывания времени и отключать по достижению определенного кол-ва
+            query.update_pre_remind(notify_id)  # todo сделать проверку: если оповещение в порядке убывания времени и отключать по достижению определенного кол-ва
 
             text_remind = ''
             text_remind += 'Напоминание: {message}\n'.format(message=message)
@@ -287,33 +240,10 @@ class Ping:
             dispatcher.bot.sendMessage(chat_id=user_id, text=text_remind)
 
 
-# while True:
-#     query = ReminderQueries(db=DB_CONNECT)
-#     response = query.get_remind_upcoming()
-#     for notify in response:
-#         notify_id = notify[0]
-#         user_id = notify[1]
-#         message = notify[2]
-#         notify_at = notify[3]
-#         c_t = datetime.datetime.now()
-#         delta = notify_at - c_t
-#
-#         month_days = calendar.monthrange(c_t.year, c_t.month)[1]
-#
-#         print(month_days)
-#         if delta.days == 30:
-#             print('Осталось: ', delta.days ,' дней')
-#
-#         minutes = (delta.seconds % 3600) // 60
-#         print(delta)
-#
-#     sleep(5)
-
-
 def main():
     try:
-        # bot = Ping()
-        # bot.start()
+        bot = Ping()
+        bot.start()
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
         text_message_handler = MessageHandler(Filters.text, text_message)
         tags_command_handler = CommandHandler('tags', send_tags)
