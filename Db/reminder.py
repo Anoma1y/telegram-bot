@@ -49,17 +49,23 @@ class ReminderQueries(DB):
             }
 
     def insert_pre_reminder(self, data):
-        sql = 'INSERT INTO pre_reminder (remind_id, notify_at) VALUES {}'.format(','.join(['%s'] * len(data)))
-
+        sql = 'INSERT INTO pre_reminder (remind_id, notify_at) VALUES {} RETURNING id'.format(','.join(['%s'] * len(data)))
+        print(data)
         try:
-            self.insert_arr(sql, data)
-            print(123)
+            response = self.insert_arr(sql, data)
+            return {
+                'status': True,
+                'data': response
+            }
 
         except psycopg2.DatabaseError:
             if self.db:
                 self.db.rollback()
 
-            print('err')
+            return {
+                'status': False,
+                'data': 'Произошла ошибка при добавлении нового оповещения'
+            }
 
 
     def update_remind(self, id):

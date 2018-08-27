@@ -28,7 +28,7 @@ class DB:
         response = None
 
         if "RETURNING" in sql:
-            response = result.fetchone()
+            response = result.fetchall()
 
         self.db.commit()
         return response

@@ -31,12 +31,6 @@ DB_CONNECT = psycopg2.connect(
     port=CONFIG.DB_PORT
 )
 
-ll = [
-    (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-    (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-    (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-    (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-]
 # cursor = DB_CONNECT.cursor()
 
 # # data = [(1,'x'), (2,'y')]
@@ -49,8 +43,6 @@ ll = [
 # args_str = ','.join(DB_CONNECT.cursor().mogrify("(%s, %s)", x) for x in ll)
 # print(args_str)
 #
-query = ReminderQueries(db=DB_CONNECT)
-query.insert_pre_reminder(ll)
 
 
 # get command list
@@ -108,6 +100,51 @@ def check_reminder(msg):
     return False
 
 
+def delta_time(f_t):
+    c_t = datetime.datetime.now()
+    return f_t - c_t
+
+
+def parse_delta_time(d):
+    return [
+        d.days,
+        d.seconds // 3600,
+        (d.seconds//60) % 60
+    ]
+
+
+def delta_time_to_minutes(d):
+    days = d.days
+    hours = d.seconds // 3600
+    minutes = (d.seconds // 60) % 60
+
+    if hours != 0:
+        minutes += (hours * 60)
+
+    if days != 0:
+        minutes += (days * 24 * 60)
+
+    return minutes
+
+
+def pre_reminder(remind_id, minutes):
+    rem = []
+    c_t = datetime.datetime.now()
+    pre_remind_breakpoint = [10, 30, 60, 360, 1440, 2880, 10080, 21600, 43200]
+
+    for pr in pre_remind_breakpoint:
+        if minutes > pr:
+            new_date = c_t + datetime.timedelta(minutes=pr)
+            rem.append((remind_id, new_date))
+
+    return rem
+
+# delta = delta_time(notify_at)
+# minutess = delta_time_to_minutes(delta)
+#
+# pre_reminder(1, minutess)
+
+
 @run_async
 def text_message(bot, update):
     text = update.message.text
@@ -125,6 +162,13 @@ def text_message(bot, update):
                 msg=msg,
                 time=notify_at
             )
+
+            delta = delta_time(notify_at)
+            minutess = delta_time_to_minutes(delta)
+
+            pre_rem = pre_reminder(remind_id=response['data'][0], minutes=minutess)
+
+            query.insert_pre_reminder(pre_rem)
 
             if response['status']:
                 bot.send_message(chat_id=chat_id, text="Напоминание '{message}' создано".format(
@@ -181,23 +225,24 @@ def get_word(bot, update):
 
 # kurwa(ll)
 
-# updater = Updater(token=CONFIG.TOKEN)
-# dispatcher = updater.dispatcher
+updater = Updater(token=CONFIG.TOKEN)
+dispatcher = updater.dispatcher
 #
 #
-# pre_remind = [10, 30, 60, 360, 1440, 2880, 10080, 21600, 43200]
+
 
 # notify_at = datetime.datetime.combine(date=datetime.date(2019, 5, 20), time=datetime.time(10, 5, 19))
 # notify_at = datetime.datetime.combine(date=datetime.date(2018, 8, 26), time=datetime.time(10, 5, 19))
-# notify_at = datetime.datetime.combine(date=datetime.date(2018, 8, 24), time=datetime.time(18, 5, 19))
-
-
-# c_t = datetime.datetime.now()
-
-# delta = notify_at - c_t
-# minutes = (delta.seconds % 3600) // 60
+# notify_at = datetime.datetime.combine(date=datetime.date(2018, 8, 29), time=datetime.time(19, 5, 19))
 #
-# print(delta.days)
+# ll = [
+#     (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+#     (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+#     (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+#     (1, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+# ]
+# query = ReminderQueries(db=DB_CONNECT)
+# print(query.insert_pre_reminder(ll))
 
 
 class Ping:
@@ -241,7 +286,7 @@ class Ping:
 
             dispatcher.bot.sendMessage(chat_id=user_id, text=text_remind)
 
-#
+
 # while True:
 #     query = ReminderQueries(db=DB_CONNECT)
 #     response = query.get_remind_upcoming()
@@ -252,47 +297,46 @@ class Ping:
 #         notify_at = notify[3]
 #         c_t = datetime.datetime.now()
 #         delta = notify_at - c_t
-        #
-        # month_days = calendar.monthrange(c_t.year, c_t.month)[1]
+#
+#         month_days = calendar.monthrange(c_t.year, c_t.month)[1]
+#
+#         print(month_days)
+#         if delta.days == 30:
+#             print('Осталось: ', delta.days ,' дней')
+#
+#         minutes = (delta.seconds % 3600) // 60
+#         print(delta)
+#
+#     sleep(5)
 
-        # print(month_days)
-        # if delta.days == 30:
-        #     print('Осталось: ', delta.days ,' дней')
 
-        # minutes = (delta.seconds % 3600) // 60
-        # print(delta)
+def main():
+    try:
+        # bot = Ping()
+        # bot.start()
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+        text_message_handler = MessageHandler(Filters.text, text_message)
+        tags_command_handler = CommandHandler('tags', send_tags)
+        image_command_handler = CommandHandler('image', send_album)
+        help_command_handler = CommandHandler('help', get_help_command_list)
+        addword_command_handler = CommandHandler('addword', add_word)
+        getword_command_handler = CommandHandler('getword', get_word)
 
-    # sleep(5)
+        dispatcher.add_handler(tags_command_handler)
+        dispatcher.add_handler(image_command_handler)
+        dispatcher.add_handler(help_command_handler)
+        dispatcher.add_handler(addword_command_handler)
+        dispatcher.add_handler(text_message_handler)
+
+        updater.start_polling(clean=True)
+
+        updater.idle()
+    except Exception as e:
+        print("type error: " + str(e))
 
 
-#
-# def main():
-#     try:
-#         bot = Ping()
-#         bot.start()
-#         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-#         text_message_handler = MessageHandler(Filters.text, text_message)
-#         tags_command_handler = CommandHandler('tags', send_tags)
-#         image_command_handler = CommandHandler('image', send_album)
-#         help_command_handler = CommandHandler('help', get_help_command_list)
-#         addword_command_handler = CommandHandler('addword', add_word)
-#         getword_command_handler = CommandHandler('getword', get_word)
-#
-#         dispatcher.add_handler(tags_command_handler)
-#         dispatcher.add_handler(image_command_handler)
-#         dispatcher.add_handler(help_command_handler)
-#         dispatcher.add_handler(addword_command_handler)
-#         dispatcher.add_handler(text_message_handler)
-#
-#         updater.start_polling(clean=True)
-#
-#         updater.idle()
-#     except Exception as e:
-#         print("type error: " + str(e))
-#
-#
-# if __name__ == '__main__':
-#     try:
-#         main()
-#     except KeyboardInterrupt:
-#         exit()
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        exit()
