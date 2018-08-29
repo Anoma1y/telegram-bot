@@ -16,6 +16,15 @@ class DictionaryQueries(DB):
         result = self.select(sql)
         return result
 
+    def get_random_list(self, language, limit):
+        sql = "SELECT * FROM {language}_dictionary ORDER BY RANDOM() LIMIT {limit}".format(
+            language=language,
+            limit=limit
+        )
+
+        result = self.select(sql)
+        return result
+
     def get_word_by_word_translate(self, language, word_translate):
         sql = "SELECT * FROM {language}_dictionary WHERE word_translate = '{word_translate}'".format(
             language=language,

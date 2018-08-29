@@ -21,7 +21,7 @@ unix_time = {
     'month': 2629743,
     'year': 31556926
 }
-
+UPDATE_TIME = 60
 
 DB_CONNECT = psycopg2.connect(
     host=CONFIG.DB_HOST,
@@ -194,6 +194,13 @@ def get_word(bot, update):
     pass
 
 
+def get_random_list(bot, update):
+    text = update.message.text
+    chat_id = update.message.chat_id
+    dict = Dictionary(language='english', db=DB_CONNECT)
+    response = dict.get_random_list()
+    print(response)
+
 updater = Updater(token=CONFIG.TOKEN)
 dispatcher = updater.dispatcher
 
@@ -213,7 +220,8 @@ class Ping:
             if len(response) > 0:
                 self.handle_reminder(response)
 
-            sleep(10)
+            sleep(UPDATE_TIME)
+
         return
 
     def stop(self):
@@ -250,13 +258,14 @@ def main():
         image_command_handler = CommandHandler('image', send_album)
         help_command_handler = CommandHandler('help', get_help_command_list)
         addword_command_handler = CommandHandler('addword', add_word)
-        getword_command_handler = CommandHandler('getword', get_word)
+        getrandomwords_command_handler = CommandHandler('getwords', get_random_list)
 
         dispatcher.add_handler(tags_command_handler)
         dispatcher.add_handler(image_command_handler)
         dispatcher.add_handler(help_command_handler)
         dispatcher.add_handler(addword_command_handler)
         dispatcher.add_handler(text_message_handler)
+        dispatcher.add_handler(getrandomwords_command_handler)
 
         updater.start_polling(clean=True)
 

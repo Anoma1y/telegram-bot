@@ -69,6 +69,14 @@ class Dictionary:
         )
         return response
 
+    def get_random_list(self, limit=5):
+        query = DictionaryQueries(self.DB_CONNECT)
+        response = query.get_random_list(
+            language=self.language,
+            limit=limit
+        )
+        return response
+
     def insert(self, msg):
         parse = self.gen_translate(msg)
 
