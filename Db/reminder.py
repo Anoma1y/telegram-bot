@@ -30,6 +30,7 @@ class ReminderQueries(DB):
               JOIN reminder ON pre_reminder.remind_id = reminder.id
             WHERE pre_reminder.is_sent = FALSE AND pre_reminder.notify_at BETWEEN now() and now() + INTERVAL '5 MINUTES'
         """
+
         result = self.select(sql)
         return result
 
