@@ -202,91 +202,80 @@ def get_random_list(bot, update):
     print(response)
 
 
-query = ReminderQueries(db=DB_CONNECT)
-while True:
-    response = query.get_remind_upcoming()
-
-    print(response)
-
-    sleep(5)
+updater = Updater(token=CONFIG.TOKEN)
+dispatcher = updater.dispatcher
 
 
+class Ping:
 
-# updater = Updater(token=CONFIG.TOKEN)
-# dispatcher = updater.dispatcher
-#
-#
-# class Ping:
-#
-#     def __init__(self):
-#         self.is_started = True
-#
-#     @run_async
-#     def start(self):
-#         self.is_started = True
-#         while self.is_started:
-#             query = ReminderQueries(db=DB_CONNECT)
-#             response = query.get_remind_upcoming()
-#
-#             print(response)
-#             # if len(response) > 0:
-#                 # self.handle_reminder(response)
-#
-#             sleep(5)
-#         return
-#
-#     def stop(self):
-#         self.is_started = False
-#         return
-#
-#     def handle_reminder(self, notifies):
-#         for notify in notifies:
-#             notify_id = notify[0]
-#             user_id = notify[1]
-#             message = notify[2]
-#             notify_at = notify[3]
-#             c_t = datetime.datetime.now()
-#             delta = notify_at - c_t
-#             minutes = (delta.seconds % 3600) // 60
-#
-#             query = ReminderQueries(db=DB_CONNECT)
-#             query.update_pre_remind(notify_id)  # todo сделать проверку: если оповещение в порядке убывания времени и отключать по достижению определенного кол-ва
-#
-#             text_remind = ''
-#             text_remind += 'Напоминание: {message}\n'.format(message=message)
-#             text_remind += 'Время: через {minutes} минут'.format(minutes=minutes)
-#
-#             dispatcher.bot.sendMessage(chat_id=user_id, text=text_remind)
-#
-#
-# def main():
-#     try:
-#         bot = Ping()
-#         bot.start()
-#         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-#         text_message_handler = MessageHandler(Filters.text, text_message)
-#         tags_command_handler = CommandHandler('tags', send_tags)
-#         image_command_handler = CommandHandler('image', send_album)
-#         help_command_handler = CommandHandler('help', get_help_command_list)
-#         addword_command_handler = CommandHandler('addword', add_word)
-#         getrandomwords_command_handler = CommandHandler('getwords', get_random_list)
-#
-#         dispatcher.add_handler(tags_command_handler)
-#         dispatcher.add_handler(image_command_handler)
-#         dispatcher.add_handler(help_command_handler)
-#         dispatcher.add_handler(addword_command_handler)
-#         dispatcher.add_handler(text_message_handler)
-#         dispatcher.add_handler(getrandomwords_command_handler)
-#
-#         updater.start_polling(clean=True)
-#
-#         updater.idle()
-#     except Exception as e:
-#         print("type error: " + str(e))
-#
-#
-# if __name__ == '__main__':
-#     try:
-#         main()
-#     except KeyboardInterrupt:
-#         exit()
+    def __init__(self):
+        self.is_started = True
+
+    @run_async
+    def start(self):
+        self.is_started = True
+        while self.is_started:
+            query = ReminderQueries(db=DB_CONNECT)
+            response = query.get_remind_upcoming()
+
+            if len(response) > 0:
+                self.handle_reminder(response)
+
+            sleep(5)
+        return
+
+    def stop(self):
+        self.is_started = False
+        return
+
+    def handle_reminder(self, notifies):
+        for notify in notifies:
+            notify_id = notify[0]
+            user_id = notify[1]
+            message = notify[2]
+            notify_at = notify[3]
+            c_t = datetime.datetime.now()
+            delta = notify_at - c_t
+            minutes = (delta.seconds % 3600) // 60
+
+            query = ReminderQueries(db=DB_CONNECT)
+            query.update_pre_remind(notify_id)  # todo сделать проверку: если оповещение в порядке убывания времени и отключать по достижению определенного кол-ва
+
+            text_remind = ''
+            text_remind += 'Напоминание: {message}\n'.format(message=message)
+            text_remind += 'Время: через {minutes} минут'.format(minutes=minutes)
+
+            dispatcher.bot.sendMessage(chat_id=user_id, text=text_remind)
+
+
+def main():
+    try:
+        bot = Ping()
+        bot.start()
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+        text_message_handler = MessageHandler(Filters.text, text_message)
+        tags_command_handler = CommandHandler('tags', send_tags)
+        image_command_handler = CommandHandler('image', send_album)
+        help_command_handler = CommandHandler('help', get_help_command_list)
+        addword_command_handler = CommandHandler('addword', add_word)
+        getrandomwords_command_handler = CommandHandler('getwords', get_random_list)
+
+        dispatcher.add_handler(tags_command_handler)
+        dispatcher.add_handler(image_command_handler)
+        dispatcher.add_handler(help_command_handler)
+        dispatcher.add_handler(addword_command_handler)
+        dispatcher.add_handler(text_message_handler)
+        dispatcher.add_handler(getrandomwords_command_handler)
+
+        updater.start_polling(clean=True)
+
+        updater.idle()
+    except Exception as e:
+        print("type error: " + str(e))
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        exit()
