@@ -34,7 +34,7 @@ class DictionaryQueries(DB):
         return result
 
     def get_word_by_word(self, language, word):
-        sql = "SELECT * FROM {language}_dictionary WHERE word = '{word}'".format(
+        sql = "SELECT * FROM {language}_dictionary WHERE word LIKE '{word}%' LIMIT 10".format(
             language=language,
             word=word
         )

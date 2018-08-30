@@ -55,26 +55,33 @@ def get_params_cmd(update):
 
 
 def send_album(bot, update):
+    chat_id = update.message.chat_id
     tags = get_params_cmd(update)
 
-    json_data = yandere.get_images(page_limit=3, tags=tags, period_time=unix_time['week'], limit=5)
+    json_data = yandere.get_images(
+        page_limit=3,
+        tags=tags,
+        period_time=unix_time['week'],
+        limit=5
+    )
 
     if len(json_data) == 0:
-        bot.sendMessage(chat_id=update.message.chat_id, text='Изображения не найдены')
+        bot.sendMessage(chat_id=chat_id, text='Изображения не найдены')
 
     for data in json_data:
-        bot.sendPhoto(chat_id=update.message.chat_id, photo=data['file_url'])
+        bot.sendPhoto(chat_id=chat_id, photo=data['file_url'])
 
 
 def send_tags(bot, update):
+    chat_id = update.message.chat_id
     tag_name = get_params_cmd(update)
 
     tags_list = yandere.get_available_tags(tag_name)
 
     if len(tags_list) > 0:
-        bot.sendMessage(chat_id=update.message.chat_id, text=tags_list)
+        bot.sendMessage(chat_id=chat_id, text=tags_list)
     else:
-        bot.sendMessage(chat_id=update.message.chat_id, text='Теги не найдены')
+        bot.sendMessage(chat_id=chat_id, text='Теги не найдены')
 
 
 def check_reminder(msg):
@@ -191,12 +198,30 @@ def add_word(bot, update):
 
 @run_async
 def get_word(bot, update):
-    pass
+    text = ' '.join(update.message.text.split()[1:])
+    chat_id = update.message.chat_id
+
+    dict = Dictionary(language='english', db=DB_CONNECT)
+    response = dict.get_by_word(text)
+
+    result = ''
+    for w in response:
+        result += '{word} - {translate}\n'.format(
+            word=w[1],
+            translate=w[2]
+        )
+
+    if len(response) != 0:
+        bot.send_message(chat_id=chat_id, text=result)
+        return
+
+    bot.send_message(chat_id=chat_id, text='Слово не найдено')
 
 
 @run_async
 def get_random_list(bot, update):
     chat_id = update.message.chat_id
+
     dict = Dictionary(language='english', db=DB_CONNECT)
     response = dict.get_random_list()
     text = ''
@@ -266,6 +291,7 @@ def main():
         image_command_handler = CommandHandler('image', send_album)
         help_command_handler = CommandHandler('help', get_help_command_list)
         addword_command_handler = CommandHandler('addword', add_word)
+        getword_command_handler = CommandHandler('getword', get_word)
         getrandomwords_command_handler = CommandHandler('getwords', get_random_list)
 
         dispatcher.add_handler(tags_command_handler)
@@ -273,6 +299,7 @@ def main():
         dispatcher.add_handler(help_command_handler)
         dispatcher.add_handler(addword_command_handler)
         dispatcher.add_handler(text_message_handler)
+        dispatcher.add_handler(getword_command_handler)
         dispatcher.add_handler(getrandomwords_command_handler)
 
         updater.start_polling(clean=True)
