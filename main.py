@@ -5,7 +5,6 @@ import config as CONFIG
 import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, run_async
 from time import sleep
-import calendar
 import datetime
 from Modules import yandere
 from Modules.reminder import Reminder
@@ -39,6 +38,7 @@ def get_help_command_list(bot, update):
     help_doc += '\t\t/tags {имя тега} - Получить все популярные теги, {имя тега} - поиск по тегу\n'
     help_doc += '\t\t/addword {english} {russian}- Добавить слово в словарик, ' \
                 '{english} - слово на английском, {russian} - перевод слова, через запятую\n'
+    help_doc += '\t\t/getwords - Получить рандомный список слов'
     help_doc += '\t\t/help - Список команд\n'
     bot.sendMessage(chat_id=update.message.chat_id, text=help_doc)
 
@@ -194,12 +194,20 @@ def get_word(bot, update):
     pass
 
 
+@run_async
 def get_random_list(bot, update):
-    text = update.message.text
     chat_id = update.message.chat_id
     dict = Dictionary(language='english', db=DB_CONNECT)
     response = dict.get_random_list()
-    print(response)
+    text = ''
+
+    for res in response:
+        text += '{word} - {translate}\n'.format(
+            word=res[1],
+            translate=res[2],
+        )
+
+    bot.send_message(chat_id=chat_id, text=text)
 
 
 updater = Updater(token=CONFIG.TOKEN)
@@ -239,7 +247,7 @@ class Ping:
             minutes = (delta.seconds % 3600) // 60
 
             query = ReminderQueries(db=DB_CONNECT)
-            query.update_pre_remind(notify_id)  # todo сделать проверку: если оповещение в порядке убывания времени и отключать по достижению определенного кол-ва
+            query.update_pre_remind(notify_id)
 
             text_remind = ''
             text_remind += 'Напоминание: {message}\n'.format(message=message)
