@@ -244,24 +244,8 @@ class Ping:
     def __init__(self):
         self.is_started = True
 
-    @run_async
-    def start(self):
-        self.is_started = True
-        while self.is_started:
-            query = ReminderQueries(db=DB_CONNECT)
-            response = query.get_remind_upcoming()
-
-            if len(response) > 0:
-                self.handle_reminder(response)
-
-            sleep(5)
-        return
-
-    def stop(self):
-        self.is_started = False
-        return
-
-    def handle_reminder(self, notifies):
+    @staticmethod
+    def handle_reminder(notifies):
         for notify in notifies:
             notify_id = notify[0]
             user_id = notify[1]
@@ -279,6 +263,23 @@ class Ping:
             text_remind += 'Время: через {minutes} минут'.format(minutes=minutes)
 
             dispatcher.bot.sendMessage(chat_id=user_id, text=text_remind)
+
+    @run_async
+    def start(self):
+        self.is_started = True
+        while self.is_started:
+            query = ReminderQueries(db=DB_CONNECT)
+            response = query.get_remind_upcoming()
+
+            if len(response) > 0:
+                self.handle_reminder(response)
+
+            sleep(UPDATE_TIME)
+        return
+
+    def stop(self):
+        self.is_started = False
+        return
 
 
 def main():
